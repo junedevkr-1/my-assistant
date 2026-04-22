@@ -35,7 +35,7 @@ def get_day_label():
 @st.cache_data(ttl=600)
 def get_weather():
     try:
-        url = "https://wttr.in/Seoul?format=j1"
+        url = "https://wttr.in/Changwon?format=j1"
         req = urllib.request.Request(url, headers={"User-Agent": "curl/7.68.0"})
         with urllib.request.urlopen(req, timeout=5) as r:
             data = json.loads(r.read().decode())
@@ -505,7 +505,7 @@ if st.session_state.page == "schedule":
             <div style="font-size:32px;line-height:1">{weather['icon']}</div>
             <div>
                 <div style="font-family:'Orbitron',monospace;font-size:9px;
-                color:rgba(255,100,0,0.4);letter-spacing:3px;margin-bottom:4px">// SEOUL WEATHER</div>
+                color:rgba(255,100,0,0.4);letter-spacing:3px;margin-bottom:4px">// CHANGWON WEATHER</div>
                 <div style="font-family:'Orbitron',monospace;font-size:22px;
                 font-weight:700;color:#ff6400">{weather['temp']}°C
                 <span style="font-size:11px;color:rgba(255,180,80,0.6);font-weight:400">
