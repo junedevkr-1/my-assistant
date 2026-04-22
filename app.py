@@ -370,6 +370,21 @@ div[data-testid="stChatInput"] textarea {
     text-align: center;
     margin-top: 8px;
 }
+
+/* ── 모바일 최적화 ── */
+@media (max-width: 768px) {
+    .jarvis-title { font-size: 24px; letter-spacing: 4px; }
+    .jarvis-sub { font-size: 8px; letter-spacing: 2px; }
+    .jarvis-bg { width: 350px; height: 350px; }
+    .ring-4, .ring-5 { display: none; }
+    .ring-3 { width: 280px; height: 280px; margin-left: -140px; margin-top: -140px; }
+    .timer-num { font-size: 48px; letter-spacing: 4px; }
+    .card-value { font-size: 24px; }
+    .card { padding: 16px; }
+    .stButton > button { font-size: 11px !important; padding: 14px 20px !important; }
+    div[data-testid="stTabs"] > div > div > button { font-size: 9px !important; letter-spacing: 1px !important; }
+    section[data-testid="stChatMessage"] p { font-size: 14px !important; }
+}
 </style>
 
 <div class="glow-bg"></div>
