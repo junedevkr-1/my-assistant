@@ -4,9 +4,12 @@ import json
 import os
 import time
 import io
-from datetime import date, datetime
+import urllib.request
+from datetime import date, datetime, timezone, timedelta
 from dotenv import load_dotenv
 from streamlit_mic_recorder import mic_recorder
+
+KST = timezone(timedelta(hours=9))
 
 load_dotenv()
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
@@ -22,12 +25,37 @@ def save_data(data):
     with open(DATA_FILE, "w") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
+def now_kst():
+    return datetime.now(KST)
+
 def get_day_label():
     days = ["월","화","수","목","금","토","일"]
-    return days[datetime.today().weekday()]
+    return days[now_kst().weekday()]
+
+@st.cache_data(ttl=600)
+def get_weather():
+    try:
+        url = "https://wttr.in/Seoul?format=j1"
+        req = urllib.request.Request(url, headers={"User-Agent": "curl/7.68.0"})
+        with urllib.request.urlopen(req, timeout=5) as r:
+            data = json.loads(r.read().decode())
+        cur = data["current_condition"][0]
+        desc = cur["weatherDesc"][0]["value"]
+        temp = cur["temp_C"]
+        feels = cur["FeelsLikeC"]
+        humid = cur["humidity"]
+        icons = {
+            "Sunny":"☀️","Clear":"🌙","Partly cloudy":"⛅","Overcast":"☁️",
+            "Cloudy":"☁️","Mist":"🌫️","Fog":"🌫️","Rain":"🌧️",
+            "Drizzle":"🌦️","Snow":"❄️","Thunderstorm":"⛈️","Blizzard":"🌨️"
+        }
+        icon = next((v for k,v in icons.items() if k.lower() in desc.lower()), "🌡️")
+        return {"icon": icon, "desc": desc, "temp": temp, "feels": feels, "humid": humid}
+    except:
+        return None
 
 def get_notification():
-    now = datetime.now()
+    now = now_kst()
     h, m, wd = now.hour, now.minute, now.weekday()
     if h == 8 and 5 <= m <= 20:
         return ("go", "HEADING TO SCHOOL — HAVE A GREAT DAY")
@@ -79,7 +107,7 @@ Today's data:\n{today_info}"""},
         except: pass
     return kr, en
 
-today = str(date.today())
+today = now_kst().strftime("%Y-%m-%d")
 data = load_data()
 if today not in data:
     data[today] = {"수면": 0, "공부": 0, "취미": 0}
@@ -410,7 +438,7 @@ st.session_state.speak_text = None
 
 # ── 헤더 ────────────────────────────────────────────────
 day_label = get_day_label()
-now_str = datetime.now().strftime("%H:%M")
+now_str = now_kst().strftime("%H:%M")
 
 col_title, col_mute = st.columns([5,1])
 with col_title:
@@ -450,7 +478,7 @@ today_info = f"날짜:{today}({day_label}요일) 수면:{data[today]['수면']}h
 
 # ── SCHEDULE ────────────────────────────────────────────
 if st.session_state.page == "schedule":
-    hour = datetime.now().hour
+    hour = now_kst().hour
     if 5 <= hour < 12:
         greeting, g_color, g_icon = "좋은 아침입니다, 주인님. 오늘도 최선을 다하시길 바랍니다.", "#ffb300", "🌅"
     elif 12 <= hour < 18:
@@ -467,6 +495,25 @@ if st.session_state.page == "schedule":
         letter-spacing:3px;margin-bottom:6px">// GREETING</div>
         <div style="font-size:14px;color:{g_color};font-weight:500">{g_icon}&nbsp; {greeting}</div>
     </div>""", unsafe_allow_html=True)
+
+    weather = get_weather()
+    if weather:
+        st.markdown(f"""
+        <div style="background:rgba(20,6,0,0.8);border:1px solid rgba(255,80,0,0.2);
+        border-top:1px solid rgba(255,100,0,0.4);border-radius:3px;
+        padding:12px 18px;margin-bottom:14px;display:flex;align-items:center;gap:16px">
+            <div style="font-size:32px;line-height:1">{weather['icon']}</div>
+            <div>
+                <div style="font-family:'Orbitron',monospace;font-size:9px;
+                color:rgba(255,100,0,0.4);letter-spacing:3px;margin-bottom:4px">// SEOUL WEATHER</div>
+                <div style="font-family:'Orbitron',monospace;font-size:22px;
+                font-weight:700;color:#ff6400">{weather['temp']}°C
+                <span style="font-size:11px;color:rgba(255,180,80,0.6);font-weight:400">
+                &nbsp; FEELS {weather['feels']}°C</span></div>
+                <div style="font-size:11px;color:rgba(255,255,255,0.35);margin-top:2px">
+                {weather['desc']} &nbsp;·&nbsp; 습도 {weather['humid']}%</div>
+            </div>
+        </div>""", unsafe_allow_html=True)
 
     st.markdown('<div class="section-label">// INPUT LOG</div>', unsafe_allow_html=True)
     col1, col2 = st.columns(2)
