@@ -3,8 +3,10 @@ from groq import Groq
 import json
 import os
 import time
+import io
 from datetime import date, datetime
 from dotenv import load_dotenv
+from streamlit_mic_recorder import mic_recorder
 
 load_dotenv()
 
@@ -31,12 +33,42 @@ def get_notification():
     weekday = now.weekday()
     h, m = now.hour, now.minute
     if h == 8 and 5 <= m <= 20:
-        return ("go", "👋 학교 잘 다녀오세요!")
+        return ("go", "HEADING TO SCHOOL — HAVE A GREAT DAY")
     if weekday in [0, 2, 4] and h == 15 and 0 <= m <= 15:
-        return ("back", "🏠 학교 잘 다녀오셨나요?")
+        return ("back", "WELCOME BACK — HOW WAS SCHOOL?")
     if weekday in [1, 3] and h == 16 and 0 <= m <= 15:
-        return ("back", "🏠 학교 잘 다녀오셨나요?")
+        return ("back", "WELCOME BACK — HOW WAS SCHOOL?")
     return None
+
+def speak(text):
+    clean = text.replace('"', '').replace("'", "").replace("\n", " ")
+    st.components.v1.html(f"""
+    <script>
+        var msg = new SpeechSynthesisUtterance("{clean}");
+        msg.lang = 'ko-KR';
+        msg.rate = 0.95;
+        msg.pitch = 0.85;
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(msg);
+    </script>
+    """, height=0)
+
+def get_jarvis_reply(messages, today_info):
+    response = client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        max_tokens=500,
+        messages=[
+            {"role": "system", "content": f"""당신은 J.A.R.V.I.S. (Just A Rather Very Intelligent System)입니다.
+아이언맨의 AI 비서이며, 사용자를 항상 '주인님'이라고 부릅니다.
+냉철하고 유머가 약간 있으며, 매우 유능하고 격식체로 말합니다.
+한국어로 짧고 스마트하게 답변하세요.
+중요: 한자(漢字)는 절대 사용하지 마세요. 순수 한글로만 답변하세요.
+단, 주인님이 한자, 사자성어, 한자 공부에 대해 직접 물어볼 때는 한자를 보여줘도 됩니다.
+오늘 스케줄 데이터:\n{today_info}"""},
+            *[{"role": m["role"], "content": m["content"]} for m in messages]
+        ]
+    )
+    return response.choices[0].message.content
 
 today = str(date.today())
 data = load_data()
@@ -52,335 +84,480 @@ if "timer_start" not in st.session_state:
     st.session_state.timer_start = None
 if "timer_category" not in st.session_state:
     st.session_state.timer_category = "공부"
+if "last_audio_id" not in st.session_state:
+    st.session_state.last_audio_id = None
+if "reply_to_speak" not in st.session_state:
+    st.session_state.reply_to_speak = None
 
-# ── 스타일 ─────────────────────────────────────────────
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Noto+Sans+KR:wght@300;400;600&display=swap');
 
 * { font-family: 'Noto Sans KR', sans-serif !important; }
 
-.stApp { background: #09090f; }
+.stApp { background: #000510 !important; }
+
+.jarvis-bg {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 700px;
+    height: 700px;
+    pointer-events: none;
+    z-index: 0;
+}
+.ring {
+    position: absolute;
+    border-radius: 50%;
+    top: 50%;
+    left: 50%;
+}
+.ring-1 {
+    width: 160px; height: 160px;
+    margin-left: -80px; margin-top: -80px;
+    border: 1px solid rgba(0,212,255,0.6);
+    box-shadow: 0 0 12px rgba(0,212,255,0.4), inset 0 0 12px rgba(0,212,255,0.1);
+    animation: spin 6s linear infinite;
+}
+.ring-1::before {
+    content: '';
+    position: absolute;
+    top: -4px; left: 50%;
+    width: 8px; height: 8px;
+    background: #00d4ff;
+    border-radius: 50%;
+    box-shadow: 0 0 10px #00d4ff;
+    margin-left: -4px;
+}
+.ring-2 {
+    width: 280px; height: 280px;
+    margin-left: -140px; margin-top: -140px;
+    border: 1px solid rgba(0,150,255,0.35);
+    border-top-color: rgba(0,212,255,0.7);
+    animation: spin-reverse 10s linear infinite;
+}
+.ring-2::before {
+    content: '';
+    position: absolute;
+    top: -3px; left: 50%;
+    width: 6px; height: 6px;
+    background: #0096ff;
+    border-radius: 50%;
+    box-shadow: 0 0 8px #0096ff;
+    margin-left: -3px;
+}
+.ring-3 {
+    width: 400px; height: 400px;
+    margin-left: -200px; margin-top: -200px;
+    border: 1px dashed rgba(0,100,200,0.25);
+    border-top-color: rgba(0,180,255,0.5);
+    animation: spin 18s linear infinite;
+}
+.ring-4 {
+    width: 520px; height: 520px;
+    margin-left: -260px; margin-top: -260px;
+    border: 1px solid rgba(0,80,160,0.2);
+    border-right-color: rgba(0,150,255,0.4);
+    animation: spin-reverse 28s linear infinite;
+}
+.ring-5 {
+    width: 640px; height: 640px;
+    margin-left: -320px; margin-top: -320px;
+    border: 1px dashed rgba(0,60,120,0.15);
+    animation: spin 40s linear infinite;
+}
+.ring-core {
+    width: 60px; height: 60px;
+    margin-left: -30px; margin-top: -30px;
+    background: radial-gradient(circle, rgba(0,212,255,0.15), transparent 70%);
+    border: 1px solid rgba(0,212,255,0.4);
+    box-shadow: 0 0 20px rgba(0,212,255,0.2);
+    animation: pulse 3s ease-in-out infinite;
+}
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes spin-reverse { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
+@keyframes pulse {
+    0%, 100% { opacity: 0.4; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.1); }
+}
+
+.glow-bg {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(0,100,200,0.06) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+}
 
 .notif-go {
-    background: linear-gradient(135deg, #1a3a2a, #0d2a1a);
-    border: 1px solid #2d6a4f;
-    border-radius: 14px;
-    padding: 16px 20px;
+    background: linear-gradient(135deg, rgba(0,40,20,0.9), rgba(0,20,10,0.9));
+    border: 1px solid rgba(0,212,100,0.4);
+    border-radius: 4px;
+    padding: 12px 20px;
     margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 16px;
+    font-family: 'Orbitron', monospace !important;
+    font-size: 12px;
     font-weight: 600;
-    color: #6ee7b7;
+    color: #00ff88;
+    letter-spacing: 2px;
+    text-shadow: 0 0 10px rgba(0,255,136,0.5);
 }
-
 .notif-back {
-    background: linear-gradient(135deg, #2a1a3a, #1a0d2a);
-    border: 1px solid #6d3a9a;
-    border-radius: 14px;
-    padding: 16px 20px;
+    background: linear-gradient(135deg, rgba(0,20,40,0.9), rgba(0,10,30,0.9));
+    border: 1px solid rgba(0,150,255,0.4);
+    border-radius: 4px;
+    padding: 12px 20px;
     margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 16px;
+    font-family: 'Orbitron', monospace !important;
+    font-size: 12px;
     font-weight: 600;
-    color: #c084fc;
+    color: #00d4ff;
+    letter-spacing: 2px;
+    text-shadow: 0 0 10px rgba(0,212,255,0.5);
 }
 
-.app-title {
-    font-size: 32px;
-    font-weight: 700;
-    background: linear-gradient(135deg, #a78bfa, #818cf8, #6ee7b7);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    margin-bottom: 2px;
+.jarvis-title {
+    font-family: 'Orbitron', monospace !important;
+    font-size: 36px;
+    font-weight: 900;
+    color: #00d4ff;
+    letter-spacing: 8px;
+    text-shadow: 0 0 20px rgba(0,212,255,0.8), 0 0 40px rgba(0,212,255,0.4);
+    margin-bottom: 4px;
 }
-
-.app-date {
-    font-size: 13px;
-    color: #444;
+.jarvis-sub {
+    font-family: 'Orbitron', monospace !important;
+    font-size: 10px;
+    color: rgba(0,212,255,0.4);
+    letter-spacing: 4px;
     margin-bottom: 28px;
-    font-weight: 400;
 }
 
 .card {
-    background: #111118;
-    border: 1px solid #1e1e2e;
-    border-radius: 18px;
-    padding: 22px 24px;
-    margin-bottom: 14px;
+    background: rgba(0,15,35,0.8);
+    border: 1px solid rgba(0,150,255,0.2);
+    border-top: 1px solid rgba(0,212,255,0.4);
+    border-radius: 4px;
+    padding: 20px 24px;
+    margin-bottom: 12px;
+    backdrop-filter: blur(10px);
 }
-
 .card-label {
-    font-size: 13px;
-    color: #555;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
+    font-family: 'Orbitron', monospace !important;
+    font-size: 10px;
+    color: rgba(0,212,255,0.5);
+    letter-spacing: 3px;
     margin-bottom: 8px;
 }
-
 .card-value {
-    font-size: 36px;
+    font-family: 'Orbitron', monospace !important;
+    font-size: 32px;
     font-weight: 700;
     color: #fff;
-    line-height: 1;
-    margin-bottom: 16px;
+    text-shadow: 0 0 10px rgba(0,212,255,0.3);
 }
-
-.card-sub {
-    font-size: 13px;
-    color: #444;
-    font-weight: 400;
-}
-
-.bar-bg {
-    background: #1e1e2e;
-    border-radius: 999px;
-    height: 6px;
-    margin-top: 12px;
-}
-
-.bar-fill {
-    height: 6px;
-    border-radius: 999px;
-}
+.card-sub { font-size: 12px; color: rgba(255,255,255,0.2); margin-left: 8px; }
+.bar-bg { background: rgba(0,100,200,0.15); border-radius: 0; height: 3px; margin-top: 14px; }
+.bar-fill { height: 3px; box-shadow: 0 0 8px currentColor; }
 
 .timer-box {
-    background: #111118;
-    border: 1px solid #1e1e2e;
-    border-radius: 24px;
+    background: rgba(0,15,35,0.9);
+    border: 1px solid rgba(0,150,255,0.2);
+    border-top: 1px solid rgba(0,212,255,0.5);
+    border-radius: 4px;
     padding: 48px 32px;
     text-align: center;
     margin: 16px 0;
 }
-
 .timer-num {
-    font-size: 72px;
+    font-family: 'Orbitron', monospace !important;
+    font-size: 64px;
     font-weight: 700;
-    letter-spacing: 6px;
-    color: #fff;
-    line-height: 1;
+    color: #00d4ff;
+    letter-spacing: 8px;
+    text-shadow: 0 0 20px rgba(0,212,255,0.6);
 }
-
 .timer-cat {
-    font-size: 13px;
-    color: #a78bfa;
-    font-weight: 600;
-    letter-spacing: 2px;
-    text-transform: uppercase;
+    font-family: 'Orbitron', monospace !important;
+    font-size: 11px;
+    letter-spacing: 4px;
     margin-top: 12px;
 }
 
 div[data-testid="stTabs"] > div > div > button {
-    font-size: 14px !important;
+    font-family: 'Orbitron', monospace !important;
+    font-size: 11px !important;
     font-weight: 600 !important;
-    color: #444 !important;
-    letter-spacing: 0.3px;
+    color: rgba(0,150,255,0.4) !important;
+    letter-spacing: 2px !important;
 }
 div[data-testid="stTabs"] > div > div > button[aria-selected="true"] {
-    color: #a78bfa !important;
+    color: #00d4ff !important;
+    text-shadow: 0 0 8px rgba(0,212,255,0.6) !important;
 }
 div[data-testid="stTabs"] > div > div {
-    border-bottom: 1px solid #1e1e2e !important;
+    border-bottom: 1px solid rgba(0,100,200,0.3) !important;
 }
 
 .stButton > button {
-    border-radius: 14px !important;
-    font-weight: 600 !important;
-    font-size: 15px !important;
+    font-family: 'Orbitron', monospace !important;
+    border-radius: 2px !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    letter-spacing: 3px !important;
     padding: 12px 28px !important;
     border: none !important;
-    transition: all 0.2s !important;
 }
 .stButton > button[kind="primary"] {
-    background: linear-gradient(135deg, #a78bfa, #818cf8) !important;
-    color: #fff !important;
-}
-.stButton > button[kind="secondary"] {
-    background: #1e1e2e !important;
-    color: #888 !important;
-}
-
-div[data-testid="stNumberInput"] input {
-    background: #111118 !important;
-    border: 1px solid #1e1e2e !important;
-    border-radius: 12px !important;
-    color: #fff !important;
-    font-size: 15px !important;
+    background: linear-gradient(135deg, rgba(0,180,255,0.2), rgba(0,100,200,0.1)) !important;
+    border: 1px solid rgba(0,212,255,0.5) !important;
+    color: #00d4ff !important;
+    text-shadow: 0 0 8px rgba(0,212,255,0.8) !important;
+    box-shadow: 0 0 15px rgba(0,150,255,0.2) !important;
 }
 
-div[data-testid="stNumberInput"] label {
-    color: #666 !important;
+div[data-testid="stNumberInput"] input,
+div[data-testid="stSelectbox"] > div > div {
+    background: rgba(0,15,35,0.8) !important;
+    border: 1px solid rgba(0,100,200,0.3) !important;
+    border-radius: 2px !important;
+    color: #00d4ff !important;
+    font-family: 'Orbitron', monospace !important;
     font-size: 13px !important;
-    font-weight: 600 !important;
+}
+div[data-testid="stNumberInput"] label,
+div[data-testid="stSelectbox"] label {
+    font-family: 'Orbitron', monospace !important;
+    font-size: 10px !important;
+    color: rgba(0,212,255,0.4) !important;
+    letter-spacing: 2px !important;
 }
 
 section[data-testid="stChatMessage"] {
-    background: #111118 !important;
-    border: 1px solid #1e1e2e !important;
-    border-radius: 14px !important;
+    background: rgba(0,15,35,0.8) !important;
+    border: 1px solid rgba(0,100,200,0.2) !important;
+    border-radius: 4px !important;
     margin-bottom: 8px;
 }
-
 div[data-testid="stChatInput"] textarea {
-    background: #111118 !important;
-    border: 1px solid #1e1e2e !important;
-    border-radius: 14px !important;
-    color: #fff !important;
+    background: rgba(0,15,35,0.9) !important;
+    border: 1px solid rgba(0,150,255,0.3) !important;
+    border-radius: 4px !important;
+    color: #00d4ff !important;
+    font-family: 'Orbitron', monospace !important;
+    font-size: 12px !important;
 }
 
-.section-title {
-    font-size: 11px;
-    font-weight: 700;
-    color: #333;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    margin-bottom: 14px;
+.section-label {
+    font-family: 'Orbitron', monospace !important;
+    font-size: 9px;
+    color: rgba(0,150,255,0.35);
+    letter-spacing: 3px;
+    margin-bottom: 12px;
     margin-top: 8px;
 }
 
-div[data-testid="stSelectbox"] > div > div {
-    background: #111118 !important;
-    border: 1px solid #1e1e2e !important;
-    border-radius: 12px !important;
-    color: #fff !important;
+.voice-hint {
+    font-family: 'Orbitron', monospace !important;
+    font-size: 9px;
+    color: rgba(0,212,255,0.3);
+    letter-spacing: 2px;
+    text-align: center;
+    margin-top: 8px;
 }
 </style>
+
+<div class="glow-bg"></div>
+<div class="jarvis-bg">
+    <div class="ring ring-5"></div>
+    <div class="ring ring-4"></div>
+    <div class="ring ring-3"></div>
+    <div class="ring ring-2"></div>
+    <div class="ring ring-1"></div>
+    <div class="ring ring-core"></div>
+</div>
 """, unsafe_allow_html=True)
 
 # ── 헤더 ────────────────────────────────────────────────
 day_label = get_day_label()
-now_str = datetime.now().strftime("%H:%M")
-st.markdown(f'<div class="app-title">YEJUNY 비서</div>', unsafe_allow_html=True)
-st.markdown(f'<div class="app-date">{today} · {day_label}요일 · {now_str}</div>', unsafe_allow_html=True)
+now_str = datetime.now().strftime("%H:%M:%S")
+st.markdown('<div class="jarvis-title">J.A.R.V.I.S.</div>', unsafe_allow_html=True)
+st.markdown(f'<div class="jarvis-sub">JUST A RATHER VERY INTELLIGENT SYSTEM &nbsp;·&nbsp; {today} {day_label}요일 {now_str}</div>', unsafe_allow_html=True)
 
-# ── 알림 배너 ────────────────────────────────────────────
+# 앱 열고 닫을 때 자비스 반응
+st.components.v1.html("""
+<script>
+function jarvisSay(text) {
+    window.speechSynthesis.cancel();
+    var msg = new SpeechSynthesisUtterance(text);
+    msg.lang = 'ko-KR';
+    msg.rate = 0.95;
+    msg.pitch = 0.85;
+    window.speechSynthesis.speak(msg);
+}
+
+document.addEventListener('visibilitychange', function() {
+    if (document.hidden) {
+        jarvisSay("잠시 자리를 비우시는군요, 주인님. 시스템을 유지하겠습니다.");
+    } else {
+        jarvisSay("다시 돌아오셨군요, 주인님. 무엇을 도와드릴까요?");
+    }
+});
+</script>
+""", height=0)
+
+# 음성 재생 — rerun 이후 첫 렌더에서 실행
+if st.session_state.reply_to_speak:
+    speak(st.session_state.reply_to_speak)
+    st.session_state.reply_to_speak = None
+
 notif = get_notification()
 if notif:
     kind, msg = notif
     css_class = "notif-go" if kind == "go" else "notif-back"
-    st.markdown(f'<div class="{css_class}">{msg}</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="{css_class}">⬡ &nbsp;{msg}</div>', unsafe_allow_html=True)
 
-# ── 탭 ──────────────────────────────────────────────────
-tab1, tab2, tab3 = st.tabs(["  오늘 일과  ", "  타이머  ", "  AI 비서  "])
+tab1, tab2, tab3 = st.tabs(["  SCHEDULE  ", "  TIMER  ", "  A.I. CORE  "])
 
-# ── 탭 1: 오늘 일과 ─────────────────────────────────────
+# ── 탭 1 ────────────────────────────────────────────────
 with tab1:
-    st.markdown('<div class="section-title">기록</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-label">// INPUT LOG</div>', unsafe_allow_html=True)
     col1, col2 = st.columns(2)
     with col1:
-        sleep_h = st.number_input("😴  수면 (h)", 0.0, 12.0, float(data[today]["수면"]), 0.5)
+        sleep_h = st.number_input("SLEEP (H)", 0.0, 12.0, float(data[today]["수면"]), 0.5)
     with col2:
-        study_h = st.number_input("📚  공부 (h)", 0.0, 12.0, float(data[today]["공부"]), 0.5)
-    hobby_h = st.number_input("🎮  취미 (h)", 0.0, 12.0, float(data[today]["취미"]), 0.5)
+        study_h = st.number_input("STUDY (H)", 0.0, 12.0, float(data[today]["공부"]), 0.5)
+    hobby_h = st.number_input("HOBBY (H)", 0.0, 12.0, float(data[today]["취미"]), 0.5)
 
-    if st.button("저장", type="primary"):
+    if st.button("SAVE", type="primary"):
         data[today] = {"수면": sleep_h, "공부": study_h, "취미": hobby_h}
         save_data(data)
-        st.success("저장됐어요!")
+        st.success("// DATA SAVED SUCCESSFULLY")
 
-    st.markdown('<div class="section-title" style="margin-top:24px">달성률</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-label" style="margin-top:24px">// STATUS</div>', unsafe_allow_html=True)
 
-    items = [
-        ("😴", "수면", data[today]["수면"], 8, "#818cf8"),
-        ("📚", "공부", data[today]["공부"], 3, "#34d399"),
-        ("🎮", "취미", data[today]["취미"], 2, "#f472b6"),
-    ]
-
-    for icon, label, val, goal, color in items:
+    for label, val, goal, color in [
+        ("SLEEP", data[today]["수면"], 8, "#00d4ff"),
+        ("STUDY", data[today]["공부"], 3, "#00ff88"),
+        ("HOBBY", data[today]["취미"], 2, "#ff6eb4"),
+    ]:
         pct = min(val / goal, 1.0) * 100
         st.markdown(f"""
         <div class="card">
-            <div class="card-label">{icon} {label}</div>
-            <div style="display:flex;align-items:baseline;gap:8px">
+            <div class="card-label">{label}</div>
+            <div>
                 <span class="card-value">{val}</span>
-                <span class="card-sub">/ 목표 {goal}h</span>
+                <span class="card-sub">/ TARGET {goal}H</span>
             </div>
             <div class="bar-bg">
-                <div class="bar-fill" style="width:{pct:.0f}%;background:{color}"></div>
+                <div class="bar-fill" style="width:{pct:.0f}%;background:{color};color:{color}"></div>
             </div>
         </div>
         """, unsafe_allow_html=True)
 
-# ── 탭 2: 타이머 ────────────────────────────────────────
+# ── 탭 2 ────────────────────────────────────────────────
 with tab2:
-    col_l, col_r = st.columns([3, 1])
-    with col_l:
-        category = st.selectbox("카테고리", ["공부", "취미"])
+    category = st.selectbox("SELECT MODE", ["STUDY", "HOBBY"])
+    cat_key = "공부" if category == "STUDY" else "취미"
+    cat_color = "#00ff88" if category == "STUDY" else "#ff6eb4"
 
     if not st.session_state.timer_running:
-        st.markdown('<div style="height:16px"></div>', unsafe_allow_html=True)
-        st.markdown("""
+        st.markdown(f"""
         <div class="timer-box">
-            <div class="timer-num" style="color:#222">00:00</div>
-            <div class="timer-cat" style="color:#333">대기 중</div>
+            <div class="timer-num" style="color:rgba(0,212,255,0.2)">00:00</div>
+            <div class="timer-cat" style="color:rgba(0,150,255,0.3)">STANDBY</div>
         </div>
         """, unsafe_allow_html=True)
         col_c = st.columns([1, 2, 1])[1]
         with col_c:
-            if st.button("▶  시작", type="primary", use_container_width=True):
+            if st.button("ACTIVATE", type="primary", use_container_width=True):
                 st.session_state.timer_running = True
                 st.session_state.timer_start = time.time()
-                st.session_state.timer_category = category
+                st.session_state.timer_category = cat_key
                 st.rerun()
     else:
         elapsed = time.time() - st.session_state.timer_start
         minutes = int(elapsed // 60)
         seconds = int(elapsed % 60)
-        cat = st.session_state.timer_category
-        color_map = {"공부": "#34d399", "취미": "#f472b6"}
-        c = color_map.get(cat, "#a78bfa")
+        cat_display = "STUDY" if st.session_state.timer_category == "공부" else "HOBBY"
 
         st.markdown(f"""
         <div class="timer-box">
             <div class="timer-num">{minutes:02d}:{seconds:02d}</div>
-            <div class="timer-cat" style="color:{c}">{cat} 측정 중</div>
+            <div class="timer-cat" style="color:{cat_color}">{cat_display} MODE ACTIVE</div>
         </div>
         """, unsafe_allow_html=True)
 
         col_c = st.columns([1, 2, 1])[1]
         with col_c:
-            if st.button("⏹  완료", type="primary", use_container_width=True):
+            if st.button("COMPLETE", type="primary", use_container_width=True):
                 elapsed_hours = round(elapsed / 3600, 2)
+                cat = st.session_state.timer_category
                 data[today][cat] = round(data[today].get(cat, 0) + elapsed_hours, 2)
                 save_data(data)
                 st.session_state.timer_running = False
-                st.success(f"{minutes}분 {seconds}초 기록됐어요!")
+                st.success(f"// {minutes}M {seconds}S LOGGED")
                 st.rerun()
 
         time.sleep(1)
         st.rerun()
 
-# ── 탭 3: AI 비서 ───────────────────────────────────────
+# ── 탭 3: A.I. CORE ─────────────────────────────────────
 with tab3:
-    for msg in st.session_state.messages:
-        with st.chat_message(msg["role"]):
-            st.write(msg["content"])
-
-    user_input = st.chat_input("무엇이든 물어보세요!")
-
-    if user_input:
-        st.session_state.messages.append({"role": "user", "content": user_input})
-
-        today_info = f"""오늘: {today} ({day_label}요일)
+    today_info = f"""날짜: {today} ({day_label}요일)
 수면: {data[today]['수면']}시간
 공부: {data[today]['공부']}시간
 취미: {data[today]['취미']}시간"""
 
-        response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            max_tokens=500,
-            messages=[
-                {"role": "system", "content": f"너는 YEJUNY의 하루를 관리해주는 친근한 AI 비서야. 반말로 짧고 친근하게 대화해줘.\n\n오늘 데이터:\n{today_info}"},
-                *[{"role": m["role"], "content": m["content"]} for m in st.session_state.messages]
-            ]
-        )
+    for msg in st.session_state.messages:
+        with st.chat_message(msg["role"]):
+            st.write(msg["content"])
 
-        reply = response.choices[0].message.content
+    # ── 음성 입력 ──
+    st.markdown('<div class="section-label">// VOICE INPUT</div>', unsafe_allow_html=True)
+    audio = mic_recorder(
+        start_prompt="🎤  ACTIVATE MIC",
+        stop_prompt="⏹  PROCESSING...",
+        just_once=True,
+        key="mic"
+    )
+    st.markdown('<div class="voice-hint">PRESS TO SPEAK — RELEASE TO SEND</div>', unsafe_allow_html=True)
+
+    user_input = None
+
+    # 음성 처리
+    if audio and audio.get("id") != st.session_state.last_audio_id:
+        st.session_state.last_audio_id = audio["id"]
+        with st.spinner("// ANALYZING VOICE INPUT..."):
+            try:
+                audio_file = io.BytesIO(audio["bytes"])
+                audio_file.name = "audio.wav"
+                transcription = client.audio.transcriptions.create(
+                    file=audio_file,
+                    model="whisper-large-v3",
+                )
+                user_input = transcription.text
+                st.info(f"🎤 인식됨: {user_input}")
+            except Exception as e:
+                st.error(f"음성 인식 오류: {e}")
+
+    # 텍스트 입력
+    text_input = st.chat_input("TYPE TO J.A.R.V.I.S.")
+    if text_input:
+        user_input = text_input
+
+    # ── JARVIS 응답 ──
+    if user_input:
+        st.session_state.messages.append({"role": "user", "content": user_input})
+
+        with st.spinner("// J.A.R.V.I.S. PROCESSING..."):
+            reply = get_jarvis_reply(st.session_state.messages, today_info)
+
         st.session_state.messages.append({"role": "assistant", "content": reply})
+        st.session_state.reply_to_speak = reply
         st.rerun()
