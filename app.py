@@ -44,32 +44,7 @@ def speak_js(text):
     clean = text.replace('"', '').replace("'", "").replace("\n", " ").replace("\\", "").replace("`", "")
     st.components.v1.html(f"""
     <script>
-    function doSpeak() {{
-        window.speechSynthesis.cancel();
-        var msg = new SpeechSynthesisUtterance("{clean}");
-        msg.lang = 'en-GB';
-        msg.rate = 0.88;
-        msg.pitch = 0.6;
-        var voices = window.speechSynthesis.getVoices();
-        var chosen = voices.find(function(v) {{ return v.name === 'Daniel'; }});
-        if (!chosen) chosen = voices.find(function(v) {{ return v.name === 'Arthur'; }});
-        if (!chosen) chosen = voices.find(function(v) {{ return v.name === 'Alex'; }});
-        if (!chosen) chosen = voices.find(function(v) {{
-            var n = v.name.toLowerCase();
-            return v.lang.startsWith('en') &&
-                   n.indexOf('samantha') < 0 && n.indexOf('karen') < 0 &&
-                   n.indexOf('victoria') < 0 && n.indexOf('female') < 0 &&
-                   n.indexOf('fiona') < 0 && n.indexOf('moira') < 0 &&
-                   n.indexOf('tessa') < 0 && n.indexOf('zira') < 0;
-        }});
-        if (chosen) msg.voice = chosen;
-        window.speechSynthesis.speak(msg);
-    }}
-    if (window.speechSynthesis.getVoices().length === 0) {{
-        window.speechSynthesis.onvoiceschanged = function() {{ doSpeak(); }};
-    }} else {{
-        doSpeak();
-    }}
+    localStorage.setItem('jarvis_pending', "{clean}");
     </script>
     """, height=0)
 
@@ -344,6 +319,60 @@ section[data-testid="stChatMessage"] {
 if st.session_state.speak_text and not st.session_state.muted:
     speak_js(st.session_state.speak_text)
 st.session_state.speak_text = None
+
+# iOS 음성 엔진 (항상 페이지에 존재)
+st.components.v1.html("""
+<script>
+function getMaleVoice() {
+    var voices = window.speechSynthesis.getVoices();
+    var chosen = voices.find(function(v) { return v.name === 'Daniel'; });
+    if (!chosen) chosen = voices.find(function(v) { return v.name === 'Arthur'; });
+    if (!chosen) chosen = voices.find(function(v) { return v.name === 'Alex'; });
+    if (!chosen) chosen = voices.find(function(v) {
+        var n = v.name.toLowerCase();
+        return v.lang.startsWith('en') &&
+               n.indexOf('samantha') < 0 && n.indexOf('karen') < 0 &&
+               n.indexOf('victoria') < 0 && n.indexOf('female') < 0 &&
+               n.indexOf('fiona') < 0 && n.indexOf('moira') < 0 &&
+               n.indexOf('tessa') < 0 && n.indexOf('zira') < 0;
+    });
+    return chosen;
+}
+
+function jarvisSpeak(text) {
+    window.speechSynthesis.cancel();
+    var msg = new SpeechSynthesisUtterance(text);
+    msg.lang = 'en-GB';
+    msg.rate = 0.88;
+    msg.pitch = 0.6;
+    var v = getMaleVoice();
+    if (v) msg.voice = v;
+    window.speechSynthesis.speak(msg);
+}
+
+// iOS 잠금 해제 오버레이
+if (!localStorage.getItem('jarvis_voice_unlocked')) {
+    var overlay = document.createElement('div');
+    overlay.id = 'voice-overlay';
+    overlay.innerHTML = '<div style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,5,16,0.97);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:monospace;cursor:pointer"><div style="font-size:13px;color:rgba(0,212,255,0.5);letter-spacing:4px;margin-bottom:24px">J.A.R.V.I.S.</div><div style="width:100px;height:100px;border-radius:50%;border:2px solid rgba(0,212,255,0.6);display:flex;align-items:center;justify-content:center;box-shadow:0 0 30px rgba(0,212,255,0.3);animation:pulse2 2s ease-in-out infinite"><span style="font-size:32px">🔊</span></div><div style="font-size:11px;color:#00d4ff;letter-spacing:3px;margin-top:24px">TAP TO ACTIVATE VOICE</div><style>@keyframes pulse2{0%,100%{opacity:0.6;transform:scale(1)}50%{opacity:1;transform:scale(1.08)}}</style></div>';
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', function() {
+        jarvisSpeak('');
+        localStorage.setItem('jarvis_voice_unlocked', '1');
+        overlay.remove();
+    });
+}
+
+// 대기 중인 텍스트 감지 및 재생
+setInterval(function() {
+    var pending = localStorage.getItem('jarvis_pending');
+    if (pending && localStorage.getItem('jarvis_voice_unlocked')) {
+        localStorage.removeItem('jarvis_pending');
+        jarvisSpeak(pending);
+    }
+}, 300);
+</script>
+""", height=0)
 
 
 # ── 헤더 ────────────────────────────────────────────────
