@@ -124,30 +124,36 @@ def get_weekly_stats(data):
 def get_reply(messages, today_info):
     now = now_kst()
     time_context = f"{now.strftime('%H:%M')} ({['월','화','수','목','금','토','일'][now.weekday()]}요일)"
+    enforced_messages = []
+    for m in messages:
+        if m["role"] == "user":
+            enforced_messages.append({
+                "role": "user",
+                "content": m["content"] + "\n\n(답변은 반드시 순수 한국어로만 작성. 영어·러시아어·중국어 등 외국어 절대 사용 금지)"
+            })
+        else:
+            enforced_messages.append(m)
+
     response = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         max_tokens=1024,
         temperature=0.7,
         messages=[
             {"role": "system", "content": (
-                "너는 F.R.I.D.A.Y. — 토니 스타크의 AI 비서이자, 주인님의 일상을 함께 관리하는 지능형 어시스턴트야.\n\n"
-                "【주인님 정보】\n"
-                "- 중학생, 일상 루틴(수면·공부·취미)을 관리 중\n"
-                f"- 현재 시각: {time_context}\n"
-                f"- 오늘 기록: {today_info}\n\n"
-                "【언어 규칙】\n"
-                "- 반드시 한국어로만 답변. 단 한 글자의 외국어도 절대 사용 금지.\n"
-                "- 단, 주인님이 직접 '영어로' '다른 언어로' 요청하면 그 답변에 한해 허용.\n"
-                "- 자연스럽고 세련된 존댓말 사용. 로봇 번역체 금지.\n\n"
-                "【답변 방식】\n"
-                "- 질문에 대해 정확하고 깊이 있게 답변. 모르는 건 솔직히 인정.\n"
-                "- 단순 질문은 간결하게, 복잡한 질문은 구조적으로 설명.\n"
-                "- 학교 공부(수학, 과학, 영어 등) 질문이 오면 단계별로 친절하게 설명.\n"
-                "- 주인님의 오늘 기록을 참고해 맥락 있는 조언 제공.\n"
-                "- 필요하면 먼저 질문해서 더 정확한 도움을 줘.\n"
-                "- 항상 '주인님'으로 호칭."
+                "너는 F.R.I.D.A.Y.야. 토니 스타크의 AI 비서이며 주인님의 일상 관리 어시스턴트.\n\n"
+                "절대 규칙: 모든 답변은 오직 한국어로만 작성해. 영어, 러시아어, 중국어, 일본어 등 어떤 외국어도 단 한 글자도 쓰지 마.\n"
+                "예외: 주인님이 '영어로 말해줘' 처럼 명시적으로 요청할 때만 해당 언어 사용 가능.\n\n"
+                f"현재 시각: {time_context}\n"
+                f"오늘 기록: {today_info}\n\n"
+                "답변 방식:\n"
+                "- 항상 '주인님'으로 호칭\n"
+                "- 자연스러운 존댓말 사용 (로봇 번역체 금지)\n"
+                "- 짧은 질문은 간결하게, 복잡한 질문은 단계별로 설명\n"
+                "- 학교 공부(수학, 과학, 영어 등) 질문은 친절하고 자세하게\n"
+                "- 모르는 건 솔직하게 인정\n"
+                "- 오늘 기록을 참고해서 맥락 있는 조언 제공"
             )},
-            *[{"role": m["role"], "content": m["content"]} for m in messages]
+            *enforced_messages
         ]
     )
     return response.choices[0].message.content
