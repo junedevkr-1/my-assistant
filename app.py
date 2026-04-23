@@ -6,6 +6,7 @@ import time
 import urllib.request
 from datetime import datetime, timezone, timedelta
 from dotenv import load_dotenv
+import plotly.graph_objects as go
 
 KST = timezone(timedelta(hours=9))
 load_dotenv()
@@ -108,6 +109,18 @@ def get_weather_and_air(lat, lon):
     except:
         return None
 
+def get_weekly_stats(data):
+    day_labels, sleep_v, study_v, hobby_v = [], [], [], []
+    for i in range(6, -1, -1):
+        d = (now_kst() - timedelta(days=i)).strftime("%Y-%m-%d")
+        rec = data.get(d, {"수면": 0, "공부": 0, "취미": 0})
+        wd = ["월","화","수","목","금","토","일"][datetime.strptime(d, "%Y-%m-%d").weekday()]
+        day_labels.append(f"{wd}\n{d[5:]}")
+        sleep_v.append(float(rec.get("수면", 0)))
+        study_v.append(float(rec.get("공부", 0)))
+        hobby_v.append(float(rec.get("취미", 0)))
+    return day_labels, sleep_v, study_v, hobby_v
+
 def get_reply(messages, today_info):
     response = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
@@ -137,7 +150,7 @@ if today not in data:
 for key, default in [
     ("messages", []), ("timer_running", False),
     ("timer_start", None), ("timer_category", "공부"),
-    ("page", "schedule"),
+    ("page", "schedule"), ("last_audio_id", None),
 ]:
     if key not in st.session_state:
         st.session_state[key] = default
@@ -325,19 +338,23 @@ if notif:
     st.markdown(f'<div class="{css_class}">{icon}&nbsp; {msg_text}</div>', unsafe_allow_html=True)
 
 # ── 네비게이션 ───────────────────────────────────────────
-c1, c2, c3 = st.columns(3)
+c1, c2, c3, c4 = st.columns(4)
 with c1:
-    if st.button("📅  스케줄", use_container_width=True,
+    if st.button("📅 스케줄", use_container_width=True,
                  type="primary" if st.session_state.page == "schedule" else "secondary"):
         st.session_state.page = "schedule"; st.rerun()
 with c2:
-    if st.button("⏱  타이머", use_container_width=True,
+    if st.button("⏱ 타이머", use_container_width=True,
                  type="primary" if st.session_state.page == "timer" else "secondary"):
         st.session_state.page = "timer"; st.rerun()
 with c3:
-    if st.button("🤖  FRIDAY", use_container_width=True,
+    if st.button("🤖 FRIDAY", use_container_width=True,
                  type="primary" if st.session_state.page == "ai" else "secondary"):
         st.session_state.page = "ai"; st.rerun()
+with c4:
+    if st.button("📊 분석", use_container_width=True,
+                 type="primary" if st.session_state.page == "stats" else "secondary"):
+        st.session_state.page = "stats"; st.rerun()
 
 st.markdown("---")
 today_info = (f"날짜:{today}({day_label}요일) "
@@ -483,6 +500,143 @@ elif st.session_state.page == "timer":
 
         time.sleep(1)
         st.rerun()
+
+# ════════════════════════════════════════════════════════
+# STATS
+# ════════════════════════════════════════════════════════
+elif st.session_state.page == "stats":
+    labels, sleep_v, study_v, hobby_v = get_weekly_stats(data)
+    GOALS = {"수면": 8, "공부": 3, "취미": 2}
+
+    # ── 주간 달성률 계산 ─────────────────────────────────
+    avg_sleep = sum(sleep_v) / 7
+    avg_study = sum(study_v) / 7
+    avg_hobby = sum(hobby_v) / 7
+    pct_sleep = min(avg_sleep / GOALS["수면"] * 100, 100)
+    pct_study = min(avg_study / GOALS["공부"] * 100, 100)
+    pct_hobby = min(avg_hobby / GOALS["취미"] * 100, 100)
+
+    # ── 가장 부족한 항목 찾기 ────────────────────────────
+    scores = {"수면": pct_sleep, "공부": pct_study, "취미": pct_hobby}
+    weakest = min(scores, key=scores.get)
+    advice = {
+        "수면": f"수면이 평균 {avg_sleep:.1f}h으로 목표({GOALS['수면']}h)에 부족합니다. 취침 시간을 일정하게 유지하세요.",
+        "공부": f"공부 시간이 평균 {avg_study:.1f}h으로 목표({GOALS['공부']}h)에 미치지 못합니다. 조금씩 늘려보세요.",
+        "취미": f"취미 활동이 평균 {avg_hobby:.1f}h으로 목표({GOALS['취미']}h)보다 적습니다. 균형 잡힌 생활이 중요합니다.",
+    }
+
+    st.markdown('<div class="section-label">// 이번 주 달성률</div>', unsafe_allow_html=True)
+
+    # 달성률 게이지 카드 3개
+    ca, cb, cc = st.columns(3)
+    for col, name, pct, color in [
+        (ca, "수면", pct_sleep, "#ff8c00"),
+        (cb, "공부", pct_study, "#ffb300"),
+        (cc, "취미", pct_hobby, "#00c8b4"),
+    ]:
+        with col:
+            st.markdown(f"""
+            <div class="card" style="text-align:center;padding:18px 10px">
+                <div class="card-label" style="text-align:center">{name}</div>
+                <div style="font-family:'Orbitron',monospace;font-size:28px;
+                font-weight:900;color:{color}">{pct:.0f}%</div>
+                <div class="bar-bg" style="margin-top:8px">
+                    <div class="bar-fill" style="width:{pct:.0f}%;background:{color}"></div>
+                </div>
+                <div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:6px">
+                    평균 {[avg_sleep,avg_study,avg_hobby][["수면","공부","취미"].index(name)]:.1f}h / 목표 {GOALS[name]}h
+                </div>
+            </div>""", unsafe_allow_html=True)
+
+    # ── 주간 막대 그래프 ─────────────────────────────────
+    st.markdown('<div class="section-label" style="margin-top:18px">// 최근 7일 기록</div>', unsafe_allow_html=True)
+
+    fig = go.Figure()
+    fig.add_trace(go.Bar(
+        name="수면", x=labels, y=sleep_v,
+        marker_color="rgba(255,140,0,0.75)",
+        hovertemplate="%{y}h<extra>수면</extra>"
+    ))
+    fig.add_trace(go.Bar(
+        name="공부", x=labels, y=study_v,
+        marker_color="rgba(255,180,0,0.75)",
+        hovertemplate="%{y}h<extra>공부</extra>"
+    ))
+    fig.add_trace(go.Bar(
+        name="취미", x=labels, y=hobby_v,
+        marker_color="rgba(0,200,180,0.75)",
+        hovertemplate="%{y}h<extra>취미</extra>"
+    ))
+    # 목표선
+    for goal_val, color, name in [(8, "#ff8c00", "수면 목표"), (3, "#ffb300", "공부 목표"), (2, "#00c8b4", "취미 목표")]:
+        fig.add_hline(
+            y=goal_val, line_dash="dot",
+            line_color=color, opacity=0.4,
+            annotation_text=name,
+            annotation_font_color=color,
+            annotation_font_size=10,
+        )
+
+    fig.update_layout(
+        barmode="group",
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(255,120,0,0.04)",
+        font=dict(color="rgba(255,255,255,0.6)", size=11),
+        legend=dict(
+            orientation="h", yanchor="bottom", y=1.02,
+            bgcolor="rgba(0,0,0,0)",
+            font=dict(color="rgba(255,255,255,0.5)")
+        ),
+        margin=dict(l=10, r=10, t=30, b=10),
+        xaxis=dict(
+            gridcolor="rgba(255,100,0,0.08)",
+            tickfont=dict(size=10)
+        ),
+        yaxis=dict(
+            gridcolor="rgba(255,100,0,0.08)",
+            title="시간 (h)",
+            title_font=dict(size=10)
+        ),
+        height=300,
+    )
+    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+
+    # ── 도넛 차트 (달성률) ───────────────────────────────
+    st.markdown('<div class="section-label">// 항목별 달성 비율</div>', unsafe_allow_html=True)
+
+    fig2 = go.Figure(go.Pie(
+        labels=["수면", "공부", "취미"],
+        values=[pct_sleep, pct_study, pct_hobby],
+        hole=0.6,
+        marker=dict(colors=["#ff8c00", "#ffb300", "#00c8b4"],
+                    line=dict(color="#1c0e00", width=2)),
+        textinfo="label+percent",
+        textfont=dict(color="rgba(255,255,255,0.7)", size=12),
+        hovertemplate="%{label}: %{value:.1f}%<extra></extra>",
+    ))
+    fig2.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)",
+        showlegend=False,
+        margin=dict(l=10, r=10, t=10, b=10),
+        height=240,
+        annotations=[dict(
+            text=f"{(pct_sleep+pct_study+pct_hobby)/3:.0f}%",
+            x=0.5, y=0.5, font_size=24,
+            font_color="#ff8c00", showarrow=False
+        )]
+    )
+    st.plotly_chart(fig2, use_container_width=True, config={"displayModeBar": False})
+
+    # ── 조언 ────────────────────────────────────────────
+    st.markdown(f"""
+    <div style="background:rgba(255,140,0,0.08);border:1px solid rgba(255,140,0,0.2);
+    border-left:3px solid #ff8c00;border-radius:10px;padding:14px 18px;margin-top:4px">
+        <div style="font-family:'Orbitron',monospace;font-size:9px;
+        color:rgba(255,140,0,0.4);letter-spacing:2px;margin-bottom:6px">// F.R.I.D.A.Y. 분석</div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.75)">
+            💡 &nbsp;{advice[weakest]}
+        </div>
+    </div>""", unsafe_allow_html=True)
 
 # ════════════════════════════════════════════════════════
 # AI CORE
