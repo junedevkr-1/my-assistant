@@ -2,6 +2,7 @@ import streamlit as st
 from groq import Groq
 import json
 import os
+import re
 import time
 import urllib.request
 from datetime import datetime, timezone, timedelta
@@ -121,6 +122,42 @@ def get_weekly_stats(data):
         hobby_v.append(float(rec.get("취미", 0)))
     return day_labels, sleep_v, study_v, hobby_v
 
+def get_daily_vocab(vocab_day):
+    if vocab_day <= 15:
+        level = "중학교 1학년 수준. 매우 기초적인 일상 단어 (동물, 색깔, 숫자, 기본 동사, 학교 용품 등)"
+    elif vocab_day <= 35:
+        level = "중학교 1~2학년 수준. 일상 대화에서 자주 쓰는 단어 (감정, 날씨, 음식, 취미 관련)"
+    elif vocab_day <= 60:
+        level = "중학교 2학년 수준. 조금 더 다양한 어휘 (여행, 직업, 자연, 스포츠 관련)"
+    elif vocab_day <= 90:
+        level = "중학교 2~3학년 수준. 교과서에 나오는 단어 (사회, 과학, 역사 관련 기초 어휘)"
+    elif vocab_day <= 130:
+        level = "중학교 3학년 수준. 중간 난이도 어휘 (추상적 개념, 감정 표현, 관계 표현)"
+    else:
+        level = "고등학교 수준. 고급 어휘 (학술적 표현, 뉴스에 나오는 단어)"
+
+    response = client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        max_tokens=1800,
+        temperature=0.9,
+        messages=[
+            {"role": "system", "content": "너는 영어 단어 학습 카드를 JSON으로 만드는 도우미야. JSON 배열만 출력하고 다른 텍스트는 절대 쓰지 마."},
+            {"role": "user", "content": (
+                f"오늘은 {vocab_day}일차 영단어 학습이야.\n"
+                f"난이도: {level}\n"
+                "단어 10개를 아래 JSON 형식으로 만들어줘. 같은 단어가 반복되면 안 돼.\n\n"
+                '[{"word":"example","pos":"명사","meaning":"예시, 본보기","example":"This is a good example.","example_kr":"이것은 좋은 예시입니다."}]\n\n'
+                "pos는 반드시 한국어로: 명사/동사/형용사/부사/전치사/접속사 중 하나.\n"
+                "JSON 배열만 출력."
+            )}
+        ]
+    )
+    raw = response.choices[0].message.content.strip()
+    match = re.search(r'\[.*\]', raw, re.DOTALL)
+    if match:
+        return json.loads(match.group())
+    return json.loads(raw)
+
 def get_reply(messages, today_info):
     now = now_kst()
     time_context = f"{now.strftime('%H:%M')} ({['월','화','수','목','금','토','일'][now.weekday()]}요일)"
@@ -164,6 +201,8 @@ today = now_kst().strftime("%Y-%m-%d")
 data = load_data()
 if today not in data:
     data[today] = {"수면": 0, "공부": 0, "취미": 0}
+if "vocab" not in data:
+    data["vocab"] = {"total_days": 0}
 
 # ── 세션 초기화 ──────────────────────────────────────────
 for key, default in [
@@ -357,7 +396,7 @@ if notif:
     st.markdown(f'<div class="{css_class}">{icon}&nbsp; {msg_text}</div>', unsafe_allow_html=True)
 
 # ── 네비게이션 ───────────────────────────────────────────
-c1, c2, c3, c4 = st.columns(4)
+c1, c2, c3 = st.columns(3)
 with c1:
     if st.button("📅 스케줄", use_container_width=True,
                  type="primary" if st.session_state.page == "schedule" else "secondary"):
@@ -370,10 +409,16 @@ with c3:
     if st.button("🤖 FRIDAY", use_container_width=True,
                  type="primary" if st.session_state.page == "ai" else "secondary"):
         st.session_state.page = "ai"; st.rerun()
+
+c4, c5 = st.columns(2)
 with c4:
     if st.button("📊 분석", use_container_width=True,
                  type="primary" if st.session_state.page == "stats" else "secondary"):
         st.session_state.page = "stats"; st.rerun()
+with c5:
+    if st.button("📚 영단어", use_container_width=True,
+                 type="primary" if st.session_state.page == "vocab" else "secondary"):
+        st.session_state.page = "vocab"; st.rerun()
 
 st.markdown("---")
 today_info = (f"날짜:{today}({day_label}요일) "
@@ -656,6 +701,104 @@ elif st.session_state.page == "stats":
             💡 &nbsp;{advice[weakest]}
         </div>
     </div>""", unsafe_allow_html=True)
+
+# ════════════════════════════════════════════════════════
+# VOCAB
+# ════════════════════════════════════════════════════════
+elif st.session_state.page == "vocab":
+    vocab_key = f"vocab_{today}"
+    vocab_data = data["vocab"]
+
+    # 오늘 단어가 없으면 새로 생성
+    if vocab_key not in vocab_data:
+        vocab_data["total_days"] = vocab_data.get("total_days", 0) + 1
+        day_num = vocab_data["total_days"]
+        with st.spinner("오늘의 영단어를 준비하고 있습니다..."):
+            try:
+                words = get_daily_vocab(day_num)
+                vocab_data[vocab_key] = words
+                save_data(data)
+            except Exception as e:
+                st.error(f"단어 생성 오류: {e}")
+                words = []
+    else:
+        day_num = vocab_data.get("total_days", 1)
+        words = vocab_data[vocab_key]
+
+    # 레벨 표시
+    if day_num <= 15:      level_label, level_color = "기초 (중1)", "#4caf50"
+    elif day_num <= 35:    level_label, level_color = "초급 (중1~2)", "#8bc34a"
+    elif day_num <= 60:    level_label, level_color = "중급 (중2)", "#ffb300"
+    elif day_num <= 90:    level_label, level_color = "중상급 (중2~3)", "#ff8c00"
+    elif day_num <= 130:   level_label, level_color = "고급 (중3)", "#ff6b35"
+    else:                  level_label, level_color = "최고급 (고등)", "#e53935"
+
+    st.markdown(f"""
+    <div style="display:flex;align-items:center;justify-content:space-between;
+    background:rgba(255,120,0,0.07);border:1px solid rgba(255,120,0,0.2);
+    border-radius:10px;padding:14px 18px;margin-bottom:16px">
+        <div>
+            <div style="font-family:'Orbitron',monospace;font-size:9px;
+            color:rgba(255,140,0,0.4);letter-spacing:2px;margin-bottom:4px">// 오늘의 영단어</div>
+            <div style="font-family:'Orbitron',monospace;font-size:20px;
+            font-weight:900;color:#ff8c00">DAY {day_num}</div>
+        </div>
+        <div style="background:{level_color}22;border:1px solid {level_color}66;
+        border-radius:20px;padding:5px 14px;font-size:12px;color:{level_color};font-weight:600">
+            {level_label}
+        </div>
+    </div>""", unsafe_allow_html=True)
+
+    # 단어 카드
+    for i, w in enumerate(words):
+        pos_colors = {"명사": "#64b5f6", "동사": "#81c784", "형용사": "#ffb74d",
+                      "부사": "#ce93d8", "전치사": "#80cbc4", "접속사": "#f48fb1"}
+        pos = w.get("pos", "")
+        pc = pos_colors.get(pos, "#aaa")
+        st.markdown(f"""
+        <div style="background:rgba(255,100,0,0.05);border:1px solid rgba(255,100,0,0.15);
+        border-left:3px solid rgba(255,140,0,0.5);border-radius:10px;
+        padding:14px 18px;margin-bottom:8px">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+                <div style="font-family:'Orbitron',monospace;font-size:10px;
+                color:rgba(255,140,0,0.35);min-width:22px">{i+1:02d}</div>
+                <div style="font-family:'Orbitron',monospace;font-size:20px;
+                font-weight:700;color:#ff8c00">{w.get('word','')}</div>
+                <div style="background:{pc}22;border:1px solid {pc}55;border-radius:12px;
+                padding:2px 9px;font-size:10px;color:{pc}">{pos}</div>
+            </div>
+            <div style="font-size:15px;color:rgba(255,255,255,0.85);
+            font-weight:600;margin-bottom:6px;padding-left:32px">
+                {w.get('meaning','')}
+            </div>
+            <div style="padding-left:32px">
+                <div style="font-size:12px;color:rgba(255,200,100,0.7);
+                font-style:italic">{w.get('example','')}</div>
+                <div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:2px">
+                    {w.get('example_kr','')}</div>
+            </div>
+        </div>""", unsafe_allow_html=True)
+
+    # 내일 단어 미리보기 버튼
+    st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+    col_r = st.columns([1, 2, 1])[1]
+    with col_r:
+        if st.button("🔄  내일 단어 미리 받기", type="secondary", use_container_width=True):
+            tomorrow_key = f"vocab_{(now_kst() + timedelta(days=1)).strftime('%Y-%m-%d')}"
+            if tomorrow_key not in vocab_data:
+                next_day = vocab_data.get("total_days", 0) + 1
+                with st.spinner("내일 단어 준비 중..."):
+                    try:
+                        nw = get_daily_vocab(next_day)
+                        vocab_data[tomorrow_key] = nw
+                        vocab_data["total_days"] = next_day
+                        save_data(data)
+                        st.success("내일 단어가 준비되었습니다!")
+                    except Exception as e:
+                        st.error(f"오류: {e}")
+            else:
+                st.info("내일 단어는 이미 준비되어 있습니다.")
+            st.rerun()
 
 # ════════════════════════════════════════════════════════
 # AI CORE
