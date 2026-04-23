@@ -33,12 +33,12 @@ def get_day_label():
 def get_notification():
     now = now_kst()
     h, m, wd = now.hour, now.minute, now.weekday()
-    if h == 8 and 5 <= m <= 20:
-        return ("go", "학교 잘 다녀오세요, 주인님")
+    if wd in [0,1,2,3,4] and h == 8 and 0 <= m <= 20:
+        return ("go", "학교 잘 다녀오십시오, 주인님")
     if wd in [0,2,4] and h == 15 and m <= 15:
-        return ("back", "학교 다녀오셨습니까, 주인님")
+        return ("back", "학교 잘 다녀오셨습니까, 주인님")
     if wd in [1,3] and h == 16 and m <= 15:
-        return ("back", "학교 다녀오셨습니까, 주인님")
+        return ("back", "학교 잘 다녀오셨습니까, 주인님")
     return None
 
 @st.cache_data(ttl=600)
