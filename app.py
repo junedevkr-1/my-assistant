@@ -122,18 +122,30 @@ def get_weekly_stats(data):
     return day_labels, sleep_v, study_v, hobby_v
 
 def get_reply(messages, today_info):
+    now = now_kst()
+    time_context = f"{now.strftime('%H:%M')} ({['월','화','수','목','금','토','일'][now.weekday()]}요일)"
     response = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
-        max_tokens=400,
+        max_tokens=1024,
+        temperature=0.7,
         messages=[
             {"role": "system", "content": (
-                "You are F.R.I.D.A.Y., Tony Stark's AI assistant.\n"
-                "- Always address the user as '주인님'.\n"
-                "- CRITICAL: Reply ONLY in Korean. Pure Hangul only. Zero English, zero Russian, zero Chinese, zero any other language — not even a single foreign word or letter.\n"
-                "- The ONLY exception: if the user explicitly asks you to speak in English or another language, you may do so for that reply only.\n"
-                "- Use natural formal Korean 존댓말. Do not sound like a robot translator.\n"
-                "- Be concise, smart, helpful.\n"
-                f"Today's data:\n{today_info}"
+                "너는 F.R.I.D.A.Y. — 토니 스타크의 AI 비서이자, 주인님의 일상을 함께 관리하는 지능형 어시스턴트야.\n\n"
+                "【주인님 정보】\n"
+                "- 중학생, 일상 루틴(수면·공부·취미)을 관리 중\n"
+                f"- 현재 시각: {time_context}\n"
+                f"- 오늘 기록: {today_info}\n\n"
+                "【언어 규칙】\n"
+                "- 반드시 한국어로만 답변. 단 한 글자의 외국어도 절대 사용 금지.\n"
+                "- 단, 주인님이 직접 '영어로' '다른 언어로' 요청하면 그 답변에 한해 허용.\n"
+                "- 자연스럽고 세련된 존댓말 사용. 로봇 번역체 금지.\n\n"
+                "【답변 방식】\n"
+                "- 질문에 대해 정확하고 깊이 있게 답변. 모르는 건 솔직히 인정.\n"
+                "- 단순 질문은 간결하게, 복잡한 질문은 구조적으로 설명.\n"
+                "- 학교 공부(수학, 과학, 영어 등) 질문이 오면 단계별로 친절하게 설명.\n"
+                "- 주인님의 오늘 기록을 참고해 맥락 있는 조언 제공.\n"
+                "- 필요하면 먼저 질문해서 더 정확한 도움을 줘.\n"
+                "- 항상 '주인님'으로 호칭."
             )},
             *[{"role": m["role"], "content": m["content"]} for m in messages]
         ]
