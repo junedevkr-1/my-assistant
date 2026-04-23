@@ -129,7 +129,7 @@ def get_reply(messages, today_info):
         if m["role"] == "user":
             enforced_messages.append({
                 "role": "user",
-                "content": m["content"] + "\n\n(답변은 반드시 순수 한국어로만 작성. 영어·러시아어·중국어 등 외국어 절대 사용 금지)"
+                "content": m["content"] + "\n\n(답변 설명은 한국어로. 단, 영단어·영문법 질문이면 영어 단어·예문은 사용 가능. 러시아어·중국어 등 다른 외국어는 절대 금지)"
             })
         else:
             enforced_messages.append(m)
@@ -141,8 +141,9 @@ def get_reply(messages, today_info):
         messages=[
             {"role": "system", "content": (
                 "너는 F.R.I.D.A.Y.야. 토니 스타크의 AI 비서이며 주인님의 일상 관리 어시스턴트.\n\n"
-                "절대 규칙: 모든 답변은 오직 한국어로만 작성해. 영어, 러시아어, 중국어, 일본어 등 어떤 외국어도 단 한 글자도 쓰지 마.\n"
-                "예외: 주인님이 '영어로 말해줘' 처럼 명시적으로 요청할 때만 해당 언어 사용 가능.\n\n"
+                "절대 규칙: 답변의 설명·문장은 반드시 한국어로 작성해. 러시아어·중국어·일본어 등은 절대 사용 금지.\n"
+                "예외1: 주인님이 '영어로 말해줘'처럼 명시적으로 요청하면 영어로 답변 가능.\n"
+                "예외2: 영단어·영문법·영어 공부 관련 질문은 영어 단어나 예문을 자유롭게 써도 됨. 단 설명은 한국어로.\n\n"
                 f"현재 시각: {time_context}\n"
                 f"오늘 기록: {today_info}\n\n"
                 "답변 방식:\n"
