@@ -476,80 +476,6 @@ div[data-testid="stChatInput"] textarea {
 
 hr { border-color: rgba(255,100,0,0.15) !important; }
 
-/* ── 빛의 구 (오브) ── */
-.orb-wrap {
-    position: fixed; top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    width: 520px; height: 520px;
-    pointer-events: none; z-index: -1;
-    display: flex; align-items: center; justify-content: center;
-}
-.orb-ambient {
-    position: absolute;
-    width: 260px; height: 260px; border-radius: 50%;
-    background: radial-gradient(circle,
-        rgba(255,100,0,0.07) 0%, rgba(255,60,0,0.03) 50%, transparent 70%);
-    animation: orb-breathe 5s ease-in-out infinite;
-}
-.orb-core {
-    position: absolute;
-    width: 88px; height: 88px; border-radius: 50%;
-    background: radial-gradient(circle at 36% 30%,
-        rgba(255,215,140,0.95) 0%,
-        rgba(255,130,0,0.85) 32%,
-        rgba(210,65,0,0.55) 62%,
-        rgba(130,25,0,0.2) 82%,
-        transparent 100%);
-    box-shadow:
-        0 0 22px rgba(255,130,0,0.75),
-        0 0 50px rgba(255,80,0,0.38),
-        0 0 100px rgba(255,50,0,0.14),
-        inset 0 0 18px rgba(255,200,100,0.25);
-    animation: orb-pulse 3.8s ease-in-out infinite;
-}
-.orb-core::before {
-    content: '';
-    position: absolute; top: 14%; left: 18%;
-    width: 32%; height: 26%;
-    background: radial-gradient(circle, rgba(255,235,190,0.85), transparent);
-    border-radius: 50%; filter: blur(4px);
-}
-.orb-wave {
-    position: absolute; border-radius: 50%;
-    border: 1.5px solid rgba(255,110,0,0.45);
-    animation: orb-ripple 3.8s ease-out infinite;
-}
-.orb-wave:nth-child(3) { animation-delay: 0.95s; }
-.orb-wave:nth-child(4) { animation-delay: 1.9s; }
-.orb-wave:nth-child(5) { animation-delay: 2.85s; }
-.orb-teal {
-    position: absolute; border-radius: 50%;
-    border: 1px solid transparent;
-    border-top: 1px solid rgba(0,200,180,0.3);
-    border-bottom: 1px solid rgba(0,200,180,0.15);
-    width: 140px; height: 140px;
-    animation: orb-orbit 10s linear infinite;
-}
-
-@keyframes orb-pulse {
-    0%,100% { transform: scale(1);
-        box-shadow: 0 0 22px rgba(255,130,0,0.75), 0 0 50px rgba(255,80,0,0.38), 0 0 100px rgba(255,50,0,0.14); }
-    50% { transform: scale(1.1);
-        box-shadow: 0 0 32px rgba(255,155,0,0.95), 0 0 70px rgba(255,100,0,0.55), 0 0 130px rgba(255,60,0,0.22); }
-}
-@keyframes orb-breathe {
-    0%,100% { transform: scale(1); opacity: 0.7; }
-    50% { transform: scale(1.25); opacity: 1; }
-}
-@keyframes orb-ripple {
-    0%   { width: 88px;  height: 88px;  opacity: 0.65; }
-    100% { width: 440px; height: 440px; opacity: 0; }
-}
-@keyframes orb-orbit {
-    from { transform: rotate(0deg); }
-    to   { transform: rotate(360deg); }
-}
-
 @media (max-width: 768px) {
     .fri-title { font-size: 20px; }
     .timer-num { font-size: 50px; }
@@ -557,18 +483,6 @@ hr { border-color: rgba(255,100,0,0.15) !important; }
     .orb-core  { width: 66px; height: 66px; }
 }
 </style>
-""", unsafe_allow_html=True)
-
-# ── 빛의 구 ─────────────────────────────────────────────
-st.markdown("""
-<div class="orb-wrap">
-    <div class="orb-ambient"></div>
-    <div class="orb-teal"></div>
-    <div class="orb-wave"></div>
-    <div class="orb-wave"></div>
-    <div class="orb-wave"></div>
-    <div class="orb-core"></div>
-</div>
 """, unsafe_allow_html=True)
 
 # ── 헤더 ────────────────────────────────────────────────
