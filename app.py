@@ -4,6 +4,7 @@ import json
 import os
 import re
 import time
+import calendar
 import urllib.request
 from datetime import datetime, timezone, timedelta
 from dotenv import load_dotenv
@@ -122,6 +123,108 @@ def get_weekly_stats(data):
         hobby_v.append(float(rec.get("취미", 0)))
     return day_labels, sleep_v, study_v, hobby_v
 
+def render_calendar(year, month, data):
+    today_kst = now_kst()
+    is_this_month = (today_kst.year == year and today_kst.month == month)
+    today_day = today_kst.day if is_this_month else -1
+
+    # 기록 있는 날 수집
+    days_with_data = {}
+    for date_str, rec in data.items():
+        if not date_str.startswith(f"{year}-{month:02d}-"):
+            continue
+        try:
+            day = int(date_str.split("-")[2])
+            total = rec.get("수면", 0) + rec.get("공부", 0) + rec.get("취미", 0)
+            if total > 0:
+                days_with_data[day] = total
+        except:
+            pass
+
+    # 공휴일 (고정 공휴일만)
+    holidays = {
+        (1,1): "신정", (3,1): "삼일절", (5,5): "어린이날",
+        (6,6): "현충일", (8,15): "광복절", (10,3): "개천절",
+        (10,9): "한글날", (12,25): "크리스마스"
+    }
+
+    weeks = calendar.monthcalendar(year, month)
+    month_names = ["1월","2월","3월","4월","5월","6월","7월","8월","9월","10월","11월","12월"]
+    day_names = ["월","화","수","목","금","토","일"]
+
+    rows_html = ""
+    for week in weeks:
+        row = ""
+        for col_idx, day in enumerate(week):
+            if day == 0:
+                row += '<td style="padding:6px 4px"></td>'
+                continue
+            is_today = (day == today_day)
+            is_sat = (col_idx == 5)
+            is_sun = (col_idx == 6)
+            is_holiday = (month, day) in holidays
+
+            if is_today:
+                cell_bg = "background:rgba(255,140,0,0.25);border-radius:50%;"
+                day_color = "#ff8c00"
+                font_w = "font-weight:900;"
+            elif is_sun or is_holiday:
+                cell_bg = ""
+                day_color = "#ff5555"
+                font_w = ""
+            elif is_sat:
+                cell_bg = ""
+                day_color = "#64b5f6"
+                font_w = ""
+            else:
+                cell_bg = ""
+                day_color = "rgba(255,255,255,0.75)"
+                font_w = ""
+
+            dot = ""
+            if day in days_with_data:
+                dot = '<div style="width:5px;height:5px;border-radius:50%;background:#ff8c00;margin:2px auto 0"></div>'
+
+            row += (
+                f'<td style="text-align:center;padding:4px 2px;vertical-align:top">'
+                f'<div style="{cell_bg}display:inline-block;width:28px;padding:2px 0">'
+                f'<span style="font-size:13px;color:{day_color};{font_w}">{day}</span>'
+                f'{dot}</div></td>'
+            )
+        rows_html += f"<tr>{row}</tr>"
+
+    header_row = "".join(
+        f'<th style="text-align:center;padding:6px 4px;font-size:11px;'
+        f'color:{"#ff5555" if d=="일" else "#64b5f6" if d=="토" else "rgba(255,140,0,0.45)"};'
+        f'font-weight:600;letter-spacing:1px">{d}</th>'
+        for d in day_names
+    )
+
+    return f"""
+    <div style="background:rgba(255,100,0,0.05);border:1px solid rgba(255,100,0,0.18);
+    border-radius:10px;padding:16px;margin-bottom:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <button id="cal-prev" onclick="calNav(-1)"
+            style="background:rgba(255,100,0,0.1);border:1px solid rgba(255,100,0,0.3);
+            color:#ff8c00;border-radius:6px;padding:4px 12px;cursor:pointer;font-size:14px">‹</button>
+            <div style="font-family:'Orbitron',monospace;font-size:14px;
+            font-weight:700;color:#ff8c00">{year}년 {month_names[month-1]}</div>
+            <button id="cal-next" onclick="calNav(1)"
+            style="background:rgba(255,100,0,0.1);border:1px solid rgba(255,100,0,0.3);
+            color:#ff8c00;border-radius:6px;padding:4px 12px;cursor:pointer;font-size:14px">›</button>
+        </div>
+        <table style="width:100%;border-collapse:collapse">
+            <thead><tr>{header_row}</tr></thead>
+            <tbody>{rows_html}</tbody>
+        </table>
+        <div style="margin-top:10px;display:flex;gap:12px;font-size:10px;color:rgba(255,255,255,0.3)">
+            <span><span style="display:inline-block;width:6px;height:6px;border-radius:50%;
+            background:#ff8c00;margin-right:4px;vertical-align:middle"></span>기록 있음</span>
+            <span style="color:#ff5555">● 일요일/공휴일</span>
+            <span style="color:#64b5f6">● 토요일</span>
+        </div>
+    </div>"""
+
 def get_daily_vocab(vocab_day):
     if vocab_day <= 15:
         level = "중학교 1학년 수준. 매우 기초적인 일상 단어 (동물, 색깔, 숫자, 기본 동사, 학교 용품 등)"
@@ -205,10 +308,12 @@ if "vocab" not in data:
     data["vocab"] = {"total_days": 0}
 
 # ── 세션 초기화 ──────────────────────────────────────────
+_now = now_kst()
 for key, default in [
     ("messages", []), ("timer_running", False),
     ("timer_start", None), ("timer_category", "공부"),
     ("page", "schedule"), ("last_audio_id", None),
+    ("cal_year", _now.year), ("cal_month", _now.month),
 ]:
     if key not in st.session_state:
         st.session_state[key] = default
@@ -443,6 +548,26 @@ if st.session_state.page == "schedule":
     border-left:3px solid {g_color};border-radius:10px;padding:14px 18px;margin-bottom:14px">
         <div style="font-size:14px;color:{g_color}">{g_icon}&nbsp; {greeting}</div>
     </div>""", unsafe_allow_html=True)
+
+    # 달력 네비게이션
+    cc1, cc2, cc3 = st.columns([1, 4, 1])
+    with cc1:
+        if st.button("‹", key="cal_prev", use_container_width=True, type="secondary"):
+            m, y = st.session_state.cal_month - 1, st.session_state.cal_year
+            if m < 1: m, y = 12, y - 1
+            st.session_state.cal_month, st.session_state.cal_year = m, y
+            st.rerun()
+    with cc3:
+        if st.button("›", key="cal_next", use_container_width=True, type="secondary"):
+            m, y = st.session_state.cal_month + 1, st.session_state.cal_year
+            if m > 12: m, y = 1, y + 1
+            st.session_state.cal_month, st.session_state.cal_year = m, y
+            st.rerun()
+
+    st.markdown(
+        render_calendar(st.session_state.cal_year, st.session_state.cal_month, data),
+        unsafe_allow_html=True
+    )
 
     # 날씨 + 미세먼지
     weather = get_weather_and_air(float(lat), float(lon))
