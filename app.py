@@ -243,7 +243,7 @@ def get_reply(messages, today_info):
         temperature=0.7,
         messages=[
             {"role": "system", "content": (
-                "너는 F.R.I.D.A.Y.야. 토니 스타크의 AI 비서이며 주인님의 일상 관리 어시스턴트.\n\n"
+                "너는 A.L.F.R.E.D.야. 주인님의 일상 관리 AI 비서.\n\n"
                 "절대 규칙: 답변의 설명·문장은 반드시 한국어로 작성해. 러시아어·중국어·일본어 등은 절대 사용 금지.\n"
                 "예외1: 주인님이 '영어로 말해줘'처럼 특정 언어로 답변을 요청하면 그 언어로 답변 가능.\n"
                 "예외2: 외국어 공부 관련 질문(영단어, 일본어 단어, 중국어 발음 등)은 해당 언어 단어·예문을 써도 됨. 단 설명은 한국어로.\n\n"
@@ -448,7 +448,7 @@ now_str = now_kst().strftime("%H:%M")
 
 st.markdown(f"""
 <div style="padding:4px 0 14px;border-bottom:1px solid rgba(96,165,250,0.18);margin-bottom:14px">
-    <div class="fri-title">F.R.I.D.A.Y.</div>
+    <div class="fri-title">A.L.F.R.E.D.</div>
     <div class="fri-sub">{today} &nbsp;{day_label}요일 &nbsp;{now_str} KST</div>
 </div>""", unsafe_allow_html=True)
 
@@ -470,7 +470,7 @@ with c2:
                  type="primary" if st.session_state.page == "timer" else "secondary"):
         st.session_state.page = "timer"; st.rerun()
 with c3:
-    if st.button("🤖 FRIDAY", use_container_width=True,
+    if st.button("🤖 ALFRED", use_container_width=True,
                  type="primary" if st.session_state.page == "ai" else "secondary"):
         st.session_state.page = "ai"; st.rerun()
 
@@ -776,7 +776,7 @@ elif st.session_state.page == "stats":
     <div style="background:rgba(96,165,250,0.08);border:1px solid rgba(96,165,250,0.2);
     border-left:3px solid #60a5fa;border-radius:10px;padding:14px 18px;margin-top:4px">
         <div style="font-family:'Orbitron',monospace;font-size:9px;
-        color:rgba(96,165,250,0.4);letter-spacing:2px;margin-bottom:6px">// F.R.I.D.A.Y. 분석</div>
+        color:rgba(96,165,250,0.4);letter-spacing:2px;margin-bottom:6px">// A.L.F.R.E.D. 분석</div>
         <div style="font-size:13px;color:rgba(255,255,255,0.75)">
             💡 &nbsp;{advice[weakest]}
         </div>
@@ -790,11 +790,11 @@ elif st.session_state.page == "stats":
 # ════════════════════════════════════════════════════════
 elif st.session_state.page == "ai":
     for msg in st.session_state.messages:
-        role_label = "주인님" if msg["role"] == "user" else "F.R.I.D.A.Y."
+        role_label = "주인님" if msg["role"] == "user" else "A.L.F.R.E.D."
         with st.chat_message(msg["role"]):
             st.markdown(f"**{role_label}** &nbsp; {msg['content']}")
 
-    text_input = st.chat_input("F.R.I.D.A.Y.에게 말하기")
+    text_input = st.chat_input("A.L.F.R.E.D.에게 말하기")
     if text_input:
         st.session_state.messages.append({"role": "user", "content": text_input})
         with st.spinner("처리 중..."):
