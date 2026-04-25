@@ -86,13 +86,13 @@ def get_weather_and_air(lat, lon):
 
         def pm25_grade(v):
             if v <= 15:  return "좋음", "#4caf50"
-            elif v <= 35: return "보통", "#ffb300"
+            elif v <= 35: return "보통", "#93c5fd"
             elif v <= 75: return "나쁨", "#ff6b35"
             else:         return "매우 나쁨", "#e53935"
 
         def pm10_grade(v):
             if v <= 30:   return "좋음", "#4caf50"
-            elif v <= 80: return "보통", "#ffb300"
+            elif v <= 80: return "보통", "#93c5fd"
             elif v <= 150: return "나쁨", "#ff6b35"
             else:          return "매우 나쁨", "#e53935"
 
@@ -164,8 +164,8 @@ def render_calendar(year, month, data):
             is_holiday = (month, day) in holidays
 
             if is_today:
-                cell_bg = "background:rgba(255,140,0,0.25);border-radius:50%;"
-                day_color = "#ff8c00"
+                cell_bg = "background:rgba(96,165,250,0.25);border-radius:50%;"
+                day_color = "#60a5fa"
                 font_w = "font-weight:900;"
             elif is_sun or is_holiday:
                 cell_bg = ""
@@ -182,7 +182,7 @@ def render_calendar(year, month, data):
 
             dot = ""
             if day in days_with_data:
-                dot = '<div style="width:5px;height:5px;border-radius:50%;background:#ff8c00;margin:2px auto 0"></div>'
+                dot = '<div style="width:5px;height:5px;border-radius:50%;background:#60a5fa;margin:2px auto 0"></div>'
 
             row += (
                 f'<td style="text-align:center;padding:4px 2px;vertical-align:top">'
@@ -194,23 +194,23 @@ def render_calendar(year, month, data):
 
     header_row = "".join(
         f'<th style="text-align:center;padding:6px 4px;font-size:11px;'
-        f'color:{"#ff5555" if d=="일" else "#64b5f6" if d=="토" else "rgba(255,140,0,0.45)"};'
+        f'color:{"#ff5555" if d=="일" else "#64b5f6" if d=="토" else "rgba(96,165,250,0.45)"};'
         f'font-weight:600;letter-spacing:1px">{d}</th>'
         for d in day_names
     )
 
     return f"""
-    <div style="background:rgba(255,100,0,0.05);border:1px solid rgba(255,100,0,0.18);
+    <div style="background:rgba(96,165,250,0.05);border:1px solid rgba(96,165,250,0.18);
     border-radius:10px;padding:16px;margin-bottom:14px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
             <button id="cal-prev" onclick="calNav(-1)"
-            style="background:rgba(255,100,0,0.1);border:1px solid rgba(255,100,0,0.3);
-            color:#ff8c00;border-radius:6px;padding:4px 12px;cursor:pointer;font-size:14px">‹</button>
+            style="background:rgba(96,165,250,0.1);border:1px solid rgba(96,165,250,0.3);
+            color:#60a5fa;border-radius:6px;padding:4px 12px;cursor:pointer;font-size:14px">‹</button>
             <div style="font-family:'Orbitron',monospace;font-size:14px;
-            font-weight:700;color:#ff8c00">{year}년 {month_names[month-1]}</div>
+            font-weight:700;color:#60a5fa">{year}년 {month_names[month-1]}</div>
             <button id="cal-next" onclick="calNav(1)"
-            style="background:rgba(255,100,0,0.1);border:1px solid rgba(255,100,0,0.3);
-            color:#ff8c00;border-radius:6px;padding:4px 12px;cursor:pointer;font-size:14px">›</button>
+            style="background:rgba(96,165,250,0.1);border:1px solid rgba(96,165,250,0.3);
+            color:#60a5fa;border-radius:6px;padding:4px 12px;cursor:pointer;font-size:14px">›</button>
         </div>
         <table style="width:100%;border-collapse:collapse">
             <thead><tr>{header_row}</tr></thead>
@@ -218,7 +218,7 @@ def render_calendar(year, month, data):
         </table>
         <div style="margin-top:10px;display:flex;gap:12px;font-size:10px;color:rgba(255,255,255,0.3)">
             <span><span style="display:inline-block;width:6px;height:6px;border-radius:50%;
-            background:#ff8c00;margin-right:4px;vertical-align:middle"></span>기록 있음</span>
+            background:#60a5fa;margin-right:4px;vertical-align:middle"></span>기록 있음</span>
             <span style="color:#ff5555">● 일요일/공휴일</span>
             <span style="color:#64b5f6">● 토요일</span>
         </div>
@@ -333,28 +333,28 @@ st.markdown("""
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;900&family=Noto+Sans+KR:wght@300;400;600&display=swap');
 
 * { font-family:'Noto Sans KR',sans-serif !important; box-sizing:border-box; }
-.stApp { background:#150900 !important; }
+.stApp { background:#0f172a !important; }
 .block-container { padding-top:20px !important; }
 
 .fri-title {
     font-family:'Orbitron',monospace !important;
-    font-size:26px; font-weight:900; color:#ff8c00;
-    letter-spacing:5px; text-shadow:0 0 16px rgba(255,140,0,0.55);
+    font-size:26px; font-weight:900; color:#60a5fa;
+    letter-spacing:5px; text-shadow:0 0 16px rgba(96,165,250,0.55);
     margin-bottom:2px;
 }
 .fri-sub {
     font-family:'Orbitron',monospace !important;
-    font-size:9px; color:rgba(255,140,0,0.3); letter-spacing:2px;
+    font-size:9px; color:rgba(96,165,250,0.3); letter-spacing:2px;
 }
 
 .card {
-    background:rgba(255,120,0,0.06);
-    border:1px solid rgba(255,120,0,0.15);
+    background:rgba(96,165,250,0.06);
+    border:1px solid rgba(96,165,250,0.15);
     border-radius:10px; padding:14px 18px; margin-bottom:10px;
 }
 .card-label {
     font-family:'Orbitron',monospace !important;
-    font-size:10px; color:rgba(255,160,0,0.4);
+    font-size:10px; color:rgba(96,165,250,0.4);
     letter-spacing:2px; margin-bottom:6px;
 }
 .card-value {
@@ -362,39 +362,39 @@ st.markdown("""
     font-size:26px; font-weight:700; color:#fff;
 }
 .card-sub  { font-size:11px; color:rgba(255,255,255,0.22); margin-left:6px; }
-.bar-bg    { background:rgba(255,100,0,0.1); height:5px; border-radius:3px; margin-top:10px; }
+.bar-bg    { background:rgba(96,165,250,0.1); height:5px; border-radius:3px; margin-top:10px; }
 .bar-fill  { height:5px; border-radius:3px; }
 
 .timer-box {
-    background:rgba(255,120,0,0.06);
-    border:1px solid rgba(255,120,0,0.2);
+    background:rgba(96,165,250,0.06);
+    border:1px solid rgba(96,165,250,0.2);
     border-radius:12px; padding:44px 24px; text-align:center; margin:12px 0;
 }
 .timer-num {
     font-family:'Orbitron',monospace !important;
-    font-size:62px; font-weight:900; color:#ff8c00;
-    letter-spacing:4px; text-shadow:0 0 20px rgba(255,140,0,0.45);
+    font-size:62px; font-weight:900; color:#60a5fa;
+    letter-spacing:4px; text-shadow:0 0 20px rgba(96,165,250,0.45);
 }
 .timer-cat {
     font-family:'Orbitron',monospace !important;
     font-size:10px; letter-spacing:3px; margin-top:10px;
-    color:rgba(255,160,0,0.5);
+    color:rgba(96,165,250,0.5);
 }
 
 .notif-go {
-    background:rgba(255,180,0,0.1); border-left:3px solid #ffb300;
+    background:rgba(96,165,250,0.1); border-left:3px solid #93c5fd;
     border-radius:8px; padding:10px 16px; margin-bottom:14px;
-    color:#ffb300; font-size:13px;
+    color:#93c5fd; font-size:13px;
 }
 .notif-back {
-    background:rgba(0,200,180,0.08); border-left:3px solid #00c8b4;
+    background:rgba(52,211,153,0.08); border-left:3px solid #34d399;
     border-radius:8px; padding:10px 16px; margin-bottom:14px;
-    color:#00c8b4; font-size:13px;
+    color:#34d399; font-size:13px;
 }
 
 .section-label {
     font-family:'Orbitron',monospace !important;
-    font-size:9px; color:rgba(255,140,0,0.28);
+    font-size:9px; color:rgba(96,165,250,0.28);
     letter-spacing:3px; margin:10px 0 8px;
 }
 
@@ -402,38 +402,38 @@ st.markdown("""
     border-radius:8px !important; font-weight:600 !important; font-size:12px !important;
 }
 .stButton > button[kind="primary"] {
-    background:rgba(255,140,0,0.14) !important;
-    border:1px solid rgba(255,140,0,0.5) !important;
-    color:#ff8c00 !important;
+    background:rgba(96,165,250,0.14) !important;
+    border:1px solid rgba(96,165,250,0.5) !important;
+    color:#60a5fa !important;
 }
 .stButton > button[kind="secondary"] {
-    background:rgba(255,100,0,0.04) !important;
-    border:1px solid rgba(255,100,0,0.13) !important;
-    color:rgba(255,160,0,0.35) !important;
+    background:rgba(96,165,250,0.04) !important;
+    border:1px solid rgba(96,165,250,0.13) !important;
+    color:rgba(96,165,250,0.35) !important;
 }
 
 div[data-testid="stNumberInput"] input,
 div[data-testid="stSelectbox"] > div > div {
-    background:rgba(255,80,0,0.06) !important;
-    border:1px solid rgba(255,100,0,0.22) !important;
-    border-radius:8px !important; color:#ffaa60 !important; font-size:14px !important;
+    background:rgba(96,165,250,0.06) !important;
+    border:1px solid rgba(96,165,250,0.22) !important;
+    border-radius:8px !important; color:#93c5fd !important; font-size:14px !important;
 }
 
 div[data-testid="stChatMessage"] img,
 div[data-testid="stChatMessage"] [data-testid="chatAvatarIcon-user"],
 div[data-testid="stChatMessage"] [data-testid="chatAvatarIcon-assistant"] { display:none !important; }
 section[data-testid="stChatMessage"] {
-    background:rgba(255,100,0,0.05) !important;
-    border:1px solid rgba(255,100,0,0.12) !important;
+    background:rgba(96,165,250,0.05) !important;
+    border:1px solid rgba(96,165,250,0.12) !important;
     border-radius:10px !important; margin-bottom:8px;
 }
 div[data-testid="stChatInput"] textarea {
-    background:rgba(255,80,0,0.06) !important;
-    border:1px solid rgba(255,100,0,0.28) !important;
-    border-radius:8px !important; color:#ffaa60 !important;
+    background:rgba(96,165,250,0.06) !important;
+    border:1px solid rgba(96,165,250,0.28) !important;
+    border-radius:8px !important; color:#93c5fd !important;
 }
 
-hr { border-color:rgba(255,100,0,0.12) !important; }
+hr { border-color:rgba(96,165,250,0.12) !important; }
 
 @media (max-width:768px) {
     .fri-title { font-size:20px; }
@@ -447,7 +447,7 @@ day_label = get_day_label()
 now_str = now_kst().strftime("%H:%M")
 
 st.markdown(f"""
-<div style="padding:4px 0 14px;border-bottom:1px solid rgba(255,120,0,0.18);margin-bottom:14px">
+<div style="padding:4px 0 14px;border-bottom:1px solid rgba(96,165,250,0.18);margin-bottom:14px">
     <div class="fri-title">F.R.I.D.A.Y.</div>
     <div class="fri-sub">{today} &nbsp;{day_label}요일 &nbsp;{now_str} KST</div>
 </div>""", unsafe_allow_html=True)
@@ -490,16 +490,16 @@ today_info = (f"날짜:{today}({day_label}요일) "
 if st.session_state.page == "schedule":
     hour = now_kst().hour
     if 5 <= hour < 12:
-        greeting, g_color, g_icon = "좋은 아침입니다, 주인님.", "#ffb300", "🌅"
+        greeting, g_color, g_icon = "좋은 아침입니다, 주인님.", "#93c5fd", "🌅"
     elif 12 <= hour < 18:
-        greeting, g_color, g_icon = "좋은 오후입니다, 주인님.", "#ff8c00", "☀️"
+        greeting, g_color, g_icon = "좋은 오후입니다, 주인님.", "#60a5fa", "☀️"
     elif 18 <= hour < 22:
-        greeting, g_color, g_icon = "좋은 저녁입니다, 주인님.", "#00c8b4", "🌆"
+        greeting, g_color, g_icon = "좋은 저녁입니다, 주인님.", "#34d399", "🌆"
     else:
-        greeting, g_color, g_icon = "늦은 시간입니다, 주인님. 충분히 쉬세요.", "#ff8c00", "🌙"
+        greeting, g_color, g_icon = "늦은 시간입니다, 주인님. 충분히 쉬세요.", "#60a5fa", "🌙"
 
     st.markdown(f"""
-    <div style="background:rgba(255,140,0,0.08);border:1px solid {g_color}30;
+    <div style="background:rgba(96,165,250,0.08);border:1px solid {g_color}30;
     border-left:3px solid {g_color};border-radius:10px;padding:14px 18px;margin-bottom:14px">
         <div style="font-size:14px;color:{g_color}">{g_icon}&nbsp; {greeting}</div>
     </div>""", unsafe_allow_html=True)
@@ -533,7 +533,7 @@ if st.session_state.page == "schedule":
                 <div style="font-size:38px;line-height:1">{weather['icon']}</div>
                 <div>
                     <div class="card-label">현재 날씨</div>
-                    <div style="font-family:'Orbitron',monospace;font-size:26px;font-weight:900;color:#ff8c00">
+                    <div style="font-family:'Orbitron',monospace;font-size:26px;font-weight:900;color:#60a5fa">
                         {weather['temp']}°C
                         <span style="font-size:12px;color:rgba(255,180,80,0.5);font-weight:400">
                         &nbsp;체감 {weather['feels']}°C</span>
@@ -572,9 +572,9 @@ if st.session_state.page == "schedule":
 
     st.markdown('<div class="section-label" style="margin-top:18px">// 오늘 현황</div>', unsafe_allow_html=True)
     for label, val, goal, color in [
-        ("수면", data[today]["수면"], 8, "#ff8c00"),
-        ("공부", data[today]["공부"], 3, "#ffb300"),
-        ("취미", data[today]["취미"], 2, "#00c8b4"),
+        ("수면", data[today]["수면"], 8, "#60a5fa"),
+        ("공부", data[today]["공부"], 3, "#93c5fd"),
+        ("취미", data[today]["취미"], 2, "#34d399"),
     ]:
         pct = min(val / goal, 1.0) * 100
         st.markdown(f"""
@@ -596,7 +596,7 @@ elif st.session_state.page == "timer":
         cat_key = category
 
         st.markdown("""<div class="timer-box">
-            <div class="timer-num" style="color:rgba(255,140,0,0.2)">00:00</div>
+            <div class="timer-num" style="color:rgba(96,165,250,0.2)">00:00</div>
             <div class="timer-cat">대기 중</div>
         </div>""", unsafe_allow_html=True)
 
@@ -614,7 +614,7 @@ elif st.session_state.page == "timer":
         elapsed = time.time() - st.session_state.timer_start
         minutes, seconds = int(elapsed // 60), int(elapsed % 60)
         cat = st.session_state.timer_category
-        cat_color = "#ffb300" if cat == "공부" else "#00c8b4"
+        cat_color = "#93c5fd" if cat == "공부" else "#34d399"
 
         st.markdown(f"""<div class="timer-box">
             <div class="timer-num">{minutes:02d}:{seconds:02d}</div>
@@ -622,8 +622,8 @@ elif st.session_state.page == "timer":
         </div>""", unsafe_allow_html=True)
 
         st.markdown("""
-        <div style="background:rgba(255,200,0,0.08);border:1px solid rgba(255,200,0,0.2);
-        border-radius:8px;padding:10px 16px;font-size:12px;color:rgba(255,200,0,0.6);
+        <div style="background:rgba(96,165,250,0.08);border:1px solid rgba(96,165,250,0.2);
+        border-radius:8px;padding:10px 16px;font-size:12px;color:rgba(96,165,250,0.6);
         text-align:center;margin-bottom:12px">
             화면을 꺼도 타이머는 계속 실행됩니다
         </div>""", unsafe_allow_html=True)
@@ -674,9 +674,9 @@ elif st.session_state.page == "stats":
     # 달성률 게이지 카드 3개
     ca, cb, cc = st.columns(3)
     for col, name, pct, color in [
-        (ca, "수면", pct_sleep, "#ff8c00"),
-        (cb, "공부", pct_study, "#ffb300"),
-        (cc, "취미", pct_hobby, "#00c8b4"),
+        (ca, "수면", pct_sleep, "#60a5fa"),
+        (cb, "공부", pct_study, "#93c5fd"),
+        (cc, "취미", pct_hobby, "#34d399"),
     ]:
         with col:
             st.markdown(f"""
@@ -698,21 +698,21 @@ elif st.session_state.page == "stats":
     fig = go.Figure()
     fig.add_trace(go.Bar(
         name="수면", x=labels, y=sleep_v,
-        marker_color="rgba(255,140,0,0.75)",
+        marker_color="rgba(96,165,250,0.75)",
         hovertemplate="%{y}h<extra>수면</extra>"
     ))
     fig.add_trace(go.Bar(
         name="공부", x=labels, y=study_v,
-        marker_color="rgba(255,180,0,0.75)",
+        marker_color="rgba(96,165,250,0.75)",
         hovertemplate="%{y}h<extra>공부</extra>"
     ))
     fig.add_trace(go.Bar(
         name="취미", x=labels, y=hobby_v,
-        marker_color="rgba(0,200,180,0.75)",
+        marker_color="rgba(52,211,153,0.75)",
         hovertemplate="%{y}h<extra>취미</extra>"
     ))
     # 목표선
-    for goal_val, color, name in [(8, "#ff8c00", "수면 목표"), (3, "#ffb300", "공부 목표"), (2, "#00c8b4", "취미 목표")]:
+    for goal_val, color, name in [(8, "#60a5fa", "수면 목표"), (3, "#93c5fd", "공부 목표"), (2, "#34d399", "취미 목표")]:
         fig.add_hline(
             y=goal_val, line_dash="dot",
             line_color=color, opacity=0.4,
@@ -724,7 +724,7 @@ elif st.session_state.page == "stats":
     fig.update_layout(
         barmode="group",
         paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(255,120,0,0.04)",
+        plot_bgcolor="rgba(96,165,250,0.04)",
         font=dict(color="rgba(255,255,255,0.6)", size=11),
         legend=dict(
             orientation="h", yanchor="bottom", y=1.02,
@@ -733,11 +733,11 @@ elif st.session_state.page == "stats":
         ),
         margin=dict(l=10, r=10, t=30, b=10),
         xaxis=dict(
-            gridcolor="rgba(255,100,0,0.08)",
+            gridcolor="rgba(96,165,250,0.08)",
             tickfont=dict(size=10)
         ),
         yaxis=dict(
-            gridcolor="rgba(255,100,0,0.08)",
+            gridcolor="rgba(96,165,250,0.08)",
             title="시간 (h)",
             title_font=dict(size=10)
         ),
@@ -752,8 +752,8 @@ elif st.session_state.page == "stats":
         labels=["수면", "공부", "취미"],
         values=[pct_sleep, pct_study, pct_hobby],
         hole=0.6,
-        marker=dict(colors=["#ff8c00", "#ffb300", "#00c8b4"],
-                    line=dict(color="#1c0e00", width=2)),
+        marker=dict(colors=["#60a5fa", "#93c5fd", "#34d399"],
+                    line=dict(color="#0f172a", width=2)),
         textinfo="label+percent",
         textfont=dict(color="rgba(255,255,255,0.7)", size=12),
         hovertemplate="%{label}: %{value:.1f}%<extra></extra>",
@@ -766,17 +766,17 @@ elif st.session_state.page == "stats":
         annotations=[dict(
             text=f"{(pct_sleep+pct_study+pct_hobby)/3:.0f}%",
             x=0.5, y=0.5, font_size=24,
-            font_color="#ff8c00", showarrow=False
+            font_color="#60a5fa", showarrow=False
         )]
     )
     st.plotly_chart(fig2, use_container_width=True, config={"displayModeBar": False})
 
     # ── 조언 ────────────────────────────────────────────
     st.markdown(f"""
-    <div style="background:rgba(255,140,0,0.08);border:1px solid rgba(255,140,0,0.2);
-    border-left:3px solid #ff8c00;border-radius:10px;padding:14px 18px;margin-top:4px">
+    <div style="background:rgba(96,165,250,0.08);border:1px solid rgba(96,165,250,0.2);
+    border-left:3px solid #60a5fa;border-radius:10px;padding:14px 18px;margin-top:4px">
         <div style="font-family:'Orbitron',monospace;font-size:9px;
-        color:rgba(255,140,0,0.4);letter-spacing:2px;margin-bottom:6px">// F.R.I.D.A.Y. 분석</div>
+        color:rgba(96,165,250,0.4);letter-spacing:2px;margin-bottom:6px">// F.R.I.D.A.Y. 분석</div>
         <div style="font-size:13px;color:rgba(255,255,255,0.75)">
             💡 &nbsp;{advice[weakest]}
         </div>
