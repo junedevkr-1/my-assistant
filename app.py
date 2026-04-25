@@ -332,116 +332,112 @@ st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;900&family=Noto+Sans+KR:wght@300;400;600&display=swap');
 
-* { font-family: 'Noto Sans KR', sans-serif !important; box-sizing: border-box; }
-.stApp { background: #1c0e00 !important; }
-.block-container { padding-top: 20px !important; }
+* { font-family:'Noto Sans KR',sans-serif !important; box-sizing:border-box; }
+.stApp { background:#150900 !important; }
+.block-container { padding-top:20px !important; }
 
 .fri-title {
-    font-family: 'Orbitron', monospace !important;
-    font-size: 26px; font-weight: 900; color: #ff8c00;
-    letter-spacing: 5px;
-    text-shadow: 0 0 14px rgba(255,140,0,0.5);
-    margin-bottom: 2px;
+    font-family:'Orbitron',monospace !important;
+    font-size:26px; font-weight:900; color:#ff8c00;
+    letter-spacing:5px; text-shadow:0 0 16px rgba(255,140,0,0.55);
+    margin-bottom:2px;
 }
 .fri-sub {
-    font-family: 'Orbitron', monospace !important;
-    font-size: 9px; color: rgba(255,140,0,0.35); letter-spacing: 2px;
+    font-family:'Orbitron',monospace !important;
+    font-size:9px; color:rgba(255,140,0,0.3); letter-spacing:2px;
 }
 
 .card {
-    background: rgba(255,120,0,0.07);
-    border: 1px solid rgba(255,120,0,0.18);
-    border-radius: 10px; padding: 14px 18px; margin-bottom: 10px;
+    background:rgba(255,120,0,0.06);
+    border:1px solid rgba(255,120,0,0.15);
+    border-radius:10px; padding:14px 18px; margin-bottom:10px;
 }
 .card-label {
-    font-family: 'Orbitron', monospace !important;
-    font-size: 10px; color: rgba(255,160,0,0.45);
-    letter-spacing: 2px; margin-bottom: 6px;
+    font-family:'Orbitron',monospace !important;
+    font-size:10px; color:rgba(255,160,0,0.4);
+    letter-spacing:2px; margin-bottom:6px;
 }
 .card-value {
-    font-family: 'Orbitron', monospace !important;
-    font-size: 26px; font-weight: 700; color: #fff;
+    font-family:'Orbitron',monospace !important;
+    font-size:26px; font-weight:700; color:#fff;
 }
-.card-sub { font-size: 11px; color: rgba(255,255,255,0.22); margin-left: 6px; }
-.bar-bg { background: rgba(255,100,0,0.12); height: 5px; border-radius: 3px; margin-top: 10px; }
-.bar-fill { height: 5px; border-radius: 3px; }
+.card-sub  { font-size:11px; color:rgba(255,255,255,0.22); margin-left:6px; }
+.bar-bg    { background:rgba(255,100,0,0.1); height:5px; border-radius:3px; margin-top:10px; }
+.bar-fill  { height:5px; border-radius:3px; }
 
 .timer-box {
-    background: rgba(255,120,0,0.06);
-    border: 1px solid rgba(255,120,0,0.22);
-    border-radius: 12px; padding: 44px 24px; text-align: center; margin: 12px 0;
+    background:rgba(255,120,0,0.06);
+    border:1px solid rgba(255,120,0,0.2);
+    border-radius:12px; padding:44px 24px; text-align:center; margin:12px 0;
 }
 .timer-num {
-    font-family: 'Orbitron', monospace !important;
-    font-size: 62px; font-weight: 900; color: #ff8c00;
-    letter-spacing: 4px; text-shadow: 0 0 18px rgba(255,140,0,0.4);
+    font-family:'Orbitron',monospace !important;
+    font-size:62px; font-weight:900; color:#ff8c00;
+    letter-spacing:4px; text-shadow:0 0 20px rgba(255,140,0,0.45);
 }
 .timer-cat {
-    font-family: 'Orbitron', monospace !important;
-    font-size: 10px; letter-spacing: 3px; margin-top: 10px;
-    color: rgba(255,160,0,0.5);
+    font-family:'Orbitron',monospace !important;
+    font-size:10px; letter-spacing:3px; margin-top:10px;
+    color:rgba(255,160,0,0.5);
 }
 
 .notif-go {
-    background: rgba(255,180,0,0.1); border-left: 3px solid #ffb300;
-    border-radius: 8px; padding: 10px 16px; margin-bottom: 14px;
-    color: #ffb300; font-size: 13px;
+    background:rgba(255,180,0,0.1); border-left:3px solid #ffb300;
+    border-radius:8px; padding:10px 16px; margin-bottom:14px;
+    color:#ffb300; font-size:13px;
 }
 .notif-back {
-    background: rgba(0,200,180,0.08); border-left: 3px solid #00c8b4;
-    border-radius: 8px; padding: 10px 16px; margin-bottom: 14px;
-    color: #00c8b4; font-size: 13px;
+    background:rgba(0,200,180,0.08); border-left:3px solid #00c8b4;
+    border-radius:8px; padding:10px 16px; margin-bottom:14px;
+    color:#00c8b4; font-size:13px;
 }
 
 .section-label {
-    font-family: 'Orbitron', monospace !important;
-    font-size: 9px; color: rgba(255,140,0,0.3);
-    letter-spacing: 3px; margin: 10px 0 8px;
+    font-family:'Orbitron',monospace !important;
+    font-size:9px; color:rgba(255,140,0,0.28);
+    letter-spacing:3px; margin:10px 0 8px;
 }
 
 .stButton > button {
-    border-radius: 8px !important; font-size: 12px !important; font-weight: 600 !important;
-    transition: all 0.15s !important;
+    border-radius:8px !important; font-weight:600 !important; font-size:12px !important;
 }
 .stButton > button[kind="primary"] {
-    background: rgba(255,140,0,0.15) !important;
-    border: 1px solid rgba(255,140,0,0.55) !important;
-    color: #ff8c00 !important;
+    background:rgba(255,140,0,0.14) !important;
+    border:1px solid rgba(255,140,0,0.5) !important;
+    color:#ff8c00 !important;
 }
 .stButton > button[kind="secondary"] {
-    background: rgba(255,100,0,0.04) !important;
-    border: 1px solid rgba(255,100,0,0.14) !important;
-    color: rgba(255,160,0,0.4) !important;
+    background:rgba(255,100,0,0.04) !important;
+    border:1px solid rgba(255,100,0,0.13) !important;
+    color:rgba(255,160,0,0.35) !important;
 }
 
 div[data-testid="stNumberInput"] input,
 div[data-testid="stSelectbox"] > div > div {
-    background: rgba(255,80,0,0.07) !important;
-    border: 1px solid rgba(255,100,0,0.25) !important;
-    border-radius: 8px !important; color: #ffaa60 !important; font-size: 14px !important;
+    background:rgba(255,80,0,0.06) !important;
+    border:1px solid rgba(255,100,0,0.22) !important;
+    border-radius:8px !important; color:#ffaa60 !important; font-size:14px !important;
 }
 
 div[data-testid="stChatMessage"] img,
 div[data-testid="stChatMessage"] [data-testid="chatAvatarIcon-user"],
-div[data-testid="stChatMessage"] [data-testid="chatAvatarIcon-assistant"] { display: none !important; }
+div[data-testid="stChatMessage"] [data-testid="chatAvatarIcon-assistant"] { display:none !important; }
 section[data-testid="stChatMessage"] {
-    background: rgba(255,100,0,0.05) !important;
-    border: 1px solid rgba(255,100,0,0.13) !important;
-    border-radius: 10px !important; margin-bottom: 8px;
+    background:rgba(255,100,0,0.05) !important;
+    border:1px solid rgba(255,100,0,0.12) !important;
+    border-radius:10px !important; margin-bottom:8px;
 }
 div[data-testid="stChatInput"] textarea {
-    background: rgba(255,80,0,0.07) !important;
-    border: 1px solid rgba(255,100,0,0.3) !important;
-    border-radius: 8px !important; color: #ffaa60 !important;
+    background:rgba(255,80,0,0.06) !important;
+    border:1px solid rgba(255,100,0,0.28) !important;
+    border-radius:8px !important; color:#ffaa60 !important;
 }
 
-hr { border-color: rgba(255,100,0,0.15) !important; }
+hr { border-color:rgba(255,100,0,0.12) !important; }
 
-@media (max-width: 768px) {
-    .fri-title { font-size: 20px; }
-    .timer-num { font-size: 50px; }
-    .orb-wrap  { width: 340px; height: 340px; }
-    .orb-core  { width: 66px; height: 66px; }
+@media (max-width:768px) {
+    .fri-title { font-size:20px; }
+    .timer-num { font-size:50px; }
 }
 </style>
 """, unsafe_allow_html=True)
